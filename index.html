@@ -1,0 +1,1455 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="按《法学引注手册》（第二版）把参考文献整理成脚注格式，缺项标为 [字段名]。">
+<title>法学引注助手</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400&display=swap">
+<style>
+/* Layout: a working desk. Input on the left, finished footnotes on the right, like drafts beside a proof. */
+:root {
+  --bg: #f3f5f4;
+  --panel: #ffffff;
+  --ink: #1b2422;
+  --muted: #5e6b67;
+  --line: #d7dedb;
+  --accent: #1f6b57;
+  --accent-soft: #e2efea;
+  --gap-bg: #fbe7b5;
+  --gap-ink: #7a4a00;
+  --error: #a3302a;
+  --error-soft: #f8e3e1;
+  --font-cite: "Noto Serif SC", "Songti SC", "SimSun", serif;
+  --font-ui: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #131a18; --panel: #1b2421; --ink: #e4ebe8; --muted: #9aa8a3; --line: #2f3b37;
+    --accent: #6cc4a6; --accent-soft: #1f3530; --gap-bg: #4a3712; --gap-ink: #f6d48a;
+    --error: #f08b83; --error-soft: #3d2120; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #131a18; --panel: #1b2421; --ink: #e4ebe8; --muted: #9aa8a3; --line: #2f3b37;
+  --accent: #6cc4a6; --accent-soft: #1f3530; --gap-bg: #4a3712; --gap-ink: #f6d48a;
+  --error: #f08b83; --error-soft: #3d2120; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin: 0; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.6 var(--font-ui); }
+.wrap { max-width: 1180px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: flex; flex-direction: column; gap: 22px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+h1 { font: 700 26px/1.2 var(--font-cite); margin: 0; letter-spacing: 0.02em; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 13.5px; margin: 0; }
+.sub b { color: var(--ink); font-weight: 500; }
+.desk { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 20px; align-items: start; }
+@media (max-width: 860px) { .desk { grid-template-columns: minmax(0, 1fr); } }
+.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.panel h2 { font: 600 13px/1 var(--font-ui); letter-spacing: 0.08em; color: var(--muted); margin: 0; }
+.tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--line); }
+.tab { appearance: none; background: none; border: 0; border-bottom: 2px solid transparent; margin-bottom: -1px; padding: 8px 12px; font: 500 14.5px var(--font-ui); color: var(--muted); cursor: pointer; }
+.tab[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+.tab:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+textarea, input[type="text"], input[type="number"], select {
+  width: 100%; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px;
+  padding: 8px 10px; font: 14px/1.5 var(--font-ui);
+}
+textarea { min-height: 220px; resize: vertical; font-family: var(--font-mono); font-size: 13px; line-height: 1.7; }
+.hint { color: var(--muted); font-size: 12.5px; margin: 0; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.btn { appearance: none; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 6px; padding: 7px 14px; font: 500 14px var(--font-ui); cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.btn.small { padding: 3px 10px; font-size: 12.5px; }
+.btn:hover { filter: brightness(0.96); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px 12px; }
+.field { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: 12.5px; color: var(--muted); }
+.field.req label::after { content: " *"; color: var(--accent); }
+.check { display: flex; gap: 6px; align-items: center; font-size: 13px; color: var(--ink); }
+.check input { accent-color: var(--accent); }
+.results { display: flex; flex-direction: column; gap: 0; counter-reset: fn; }
+.cite { display: grid; grid-template-columns: 2.2em minmax(0, 1fr); gap: 4px 10px; padding: 12px 0; border-top: 1px solid var(--line); }
+.cite:first-child { border-top: 0; padding-top: 2px; }
+.cite::before { counter-increment: fn; content: "[" counter(fn) "]"; font: 13px/1.9 var(--font-cite); color: var(--muted); font-variant-numeric: tabular-nums; }
+.cite .text { font: 16px/1.85 var(--font-cite); overflow-wrap: anywhere; }
+.cite .text em { font-style: italic; }
+.gap { background: var(--gap-bg); color: var(--gap-ink); border-radius: 3px; padding: 0 3px; font-family: var(--font-ui); font-size: 0.9em; }
+.meta { grid-column: 2; display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.pill { display: inline-block; border-radius: 99px; padding: 1px 9px; font-size: 12px; font-weight: 500; }
+.pill.ok { background: var(--accent-soft); color: var(--accent); }
+.pill.gaps { background: var(--gap-bg); color: var(--gap-ink); }
+.pill.err { background: var(--error-soft); color: var(--error); }
+.cite.error .text { font-family: var(--font-ui); font-size: 14px; color: var(--error); }
+.src { font-family: var(--font-mono); font-size: 12px; color: var(--muted); grid-column: 2; overflow-wrap: anywhere; }
+.summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+.empty { color: var(--muted); font-size: 14px; padding: 18px 0; }
+.legend { color: var(--muted); font-size: 12.5px; margin: 0; }
+details.help { font-size: 13px; color: var(--muted); }
+details.help summary { cursor: pointer; color: var(--ink); }
+details.help ul { margin: 8px 0 0; padding-left: 1.2em; display: flex; flex-direction: column; gap: 3px; }
+code { font-family: var(--font-mono); font-size: 12px; background: var(--bg); padding: 0 4px; border-radius: 3px; }
+.toast { position: fixed; left: 50%; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%); background: var(--ink); color: var(--bg); padding: 7px 16px; border-radius: 99px; font-size: 13.5px; }
+@media (prefers-reduced-motion: no-preference) { .cite { animation: rise .25s ease-out both; } @keyframes rise { from { opacity: .4; transform: translateY(3px); } to { opacity: 1; transform: none; } } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div>
+      <h1>法学引注助手</h1>
+      <p class="sub">依据《法学引注手册》（第二版）把参考文献整理成脚注格式。手册要求但原文缺少的信息，标为 <b>[字段名]</b>，不会自动补写。</p>
+    </div>
+  </header>
+
+  <div class="desk">
+    <section class="panel" aria-label="输入">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" id="tab-raw" aria-selected="true" aria-controls="pane-raw">粘贴原文</button>
+        <button class="tab" role="tab" id="tab-form" aria-selected="false" aria-controls="pane-form">逐项填写</button>
+      </div>
+
+      <div id="pane-raw" role="tabpanel" aria-labelledby="tab-raw" style="display:flex;flex-direction:column;gap:12px">
+        <textarea id="raw" spellcheck="false" aria-label="原始参考文献，每行一条"></textarea>
+        <p class="hint">每行一条。能识别：国标 GB/T 7714（[M] [J] [N] [D] [C] [EB/OL]）；“作者《书名》……”式的中文笔记；法条、带文号的文件；裁判文书、公报案例、指导性案例；英文的 Bluebook、OSCOLA 写法和英美案例；法文、德文、意大利文、俄文、日文的图书和期刊论文。识别不了的请用“逐项填写”。</p>
+        <div class="row">
+          <button class="btn primary" id="go-raw">转换</button>
+          <button class="btn" id="sample-raw">载入示例</button>
+          <button class="btn" id="clear-raw">清空</button>
+        </div>
+      </div>
+
+      <div id="pane-form" role="tabpanel" aria-labelledby="tab-form" hidden style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label for="type">文献类型</label>
+          <select id="type"></select>
+        </div>
+        <div class="grid" id="fields"></div>
+        <label class="check"><input type="checkbox" id="unverified"> 来源尚未核实（如 AI 工具给出的文献）</label>
+        <p class="hint">带 * 的是手册要求的信息，留空会标为 [字段名]。中文、日文作者用顿号分隔；西文、俄文作者用分号分隔，每位写“名 姓”。</p>
+        <div class="row">
+          <button class="btn primary" id="go-form">生成引注</button>
+          <button class="btn" id="clear-form">清空本类型</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="panel" aria-label="结果">
+      <div class="summary">
+        <h2>引注结果</h2>
+        <div class="row">
+          <span id="tally" class="legend"></span>
+          <button class="btn small" id="copy-all">全部复制</button>
+        </div>
+      </div>
+      <div class="results" id="results"></div>
+      <details class="help">
+        <summary>格式依据</summary>
+        <ul>
+          <li>图书：作者：《书名》（版次），译者译，出版社××××年版，第×页。（第25–48条）</li>
+          <li>析出文献前一律加“载”；期刊写“××××年第×期”。（第8、43条）</li>
+          <li>法条用阿拉伯数字，省略“中华人民共和国”。（第67、70条）</li>
+          <li>文号年份用六角括号〔〕。（第74条）</li>
+          <li>裁判文书：案名，法院（年份）案号+文书类型。（第87–89条）</li>
+          <li>英文：被引文献名用斜体，刊名写全称，页码只用 p.（第97–107条）</li>
+          <li>外文作者名在前、姓在后，不写出版地；法、德、意、俄、日文各按本语种习惯。（第95–150条）</li>
+          <li>未经核实的文献不得引用。（第2条）</li>
+        </ul>
+      </details>
+    </section>
+  </div>
+</div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+// Built from src/ by build.ts. Edit the TypeScript, then run: npm run build
+"use strict";
+(() => {
+  // src/entry.ts
+  var blank = (value) => value == null || value === "" || Array.isArray(value) && !value.length || typeof value === "object" && !Array.isArray(value) && !Object.keys(value).length;
+  var Entry = class {
+    missing = [];
+    fields;
+    constructor(fields) {
+      this.fields = { ...fields };
+    }
+    /** A scalar field as text, or null when blank. */
+    get(key) {
+      const value = this.fields[key];
+      return blank(value) || typeof value === "object" ? null : String(value);
+    }
+    /** The field was declared, even if its value is unknown (e.g. a translation with no translator). */
+    has(key) {
+      return key in this.fields;
+    }
+    flag(key) {
+      return Boolean(this.fields[key]);
+    }
+    list(key) {
+      const value = this.fields[key];
+      if (blank(value)) return [];
+      return Array.isArray(value) ? value : [String(value)];
+    }
+    dateParts(key) {
+      const value = this.fields[key];
+      return blank(value) || typeof value !== "object" || Array.isArray(value) ? null : value;
+    }
+    need(key, label) {
+      return this.require(this.get(key), label);
+    }
+    /** The value as text, or a visible [label] gap that is also recorded. */
+    require(value, label) {
+      if (!blank(value)) return String(value);
+      this.missing.push(label);
+      return `[${label}]`;
+    }
+    date(key) {
+      const d = this.dateParts(key) ?? {};
+      return `${this.require(d.year, "年份")}年${this.require(d.month, "月")}月${this.require(d.day, "日")}日`;
+    }
+  };
+
+  // src/errors.ts
+  var ParseError = class extends Error {
+    name = "ParseError";
+  };
+  var UnverifiedSourceError = class extends Error {
+    name = "UnverifiedSourceError";
+  };
+
+  // src/normalize.ts
+  var DIGITS = { 零: 0, "〇": 0, 一: 1, 二: 2, 两: 2, 三: 3, 四: 4, 五: 5, 六: 6, 七: 7, 八: 8, 九: 9 };
+  var UNITS = { 十: 10, 百: 100, 千: 1e3 };
+  var ROMAN = [
+    [1e3, "M"],
+    [900, "CM"],
+    [500, "D"],
+    [400, "CD"],
+    [100, "C"],
+    [90, "XC"],
+    [50, "L"],
+    [40, "XL"],
+    [10, "X"],
+    [9, "IX"],
+    [5, "V"],
+    [4, "IV"],
+    [1, "I"]
+  ];
+  var ERAS = { 明治: 1868, 大正: 1912, 昭和: 1926, 平成: 1989, 令和: 2019 };
+  var isBlank = (value) => value == null || value === "";
+  function toInt(numeral) {
+    const text = String(numeral).trim().replace(/[（）()]/g, "");
+    if (/^\d+$/.test(text)) return Number(text);
+    let total = 0, digit = 0;
+    for (const ch of text) {
+      if (ch in DIGITS) digit = DIGITS[ch];
+      else if (ch in UNITS) {
+        total += (digit || 1) * UNITS[ch];
+        digit = 0;
+      } else throw new Error(`无法识别的数字：${numeral}`);
+    }
+    return total + digit;
+  }
+  function span(value) {
+    if (isBlank(value)) return null;
+    return String(value).trim().replace(/\s*[–—~～]\s*/g, "-").replace(/(\d+)-(\d+)/g, (_, a, b) => `${a}-${a.slice(0, Math.max(0, a.length - b.length))}${b}`);
+  }
+  function pages(value) {
+    return span(value)?.replace(/\s*[,，]\s*/g, "、").replace(/\s/g, "") ?? null;
+  }
+  function docNumber(value) {
+    return isBlank(value) ? null : String(value).trim().replace(/[(（\[【［〔](\d{4})[)）\]】］〕]/, "〔$1〕");
+  }
+  function statuteName(name) {
+    name = name.trim().replace(/^《|》$/g, "");
+    return name.replace(/^中华人民共和国/, "") || name;
+  }
+  var section = (value) => String(value).replace(/^0+/, "") || "0";
+  function roman(value) {
+    const text = String(value).trim();
+    if (!/^\d+$/.test(text)) return text;
+    let n = Number(text), out = "";
+    for (const [amount, letters] of ROMAN) {
+      out += letters.repeat(Math.floor(n / amount));
+      n %= amount;
+    }
+    return out;
+  }
+  function westernYear(value) {
+    if (isBlank(value)) return null;
+    const text = String(value).trim();
+    const m = text.match(/^(明治|大正|昭和|平成|令和)\s*(元|\d+)\s*年?$/);
+    return m ? String(ERAS[m[1]] + (m[2] === "元" ? 1 : Number(m[2])) - 1) : text.replace(/年$/, "");
+  }
+  var caseName = (name) => name.trim().replace(/\s+v\.?\s+/g, " v. ");
+
+  // src/styles/western.ts
+  function fullName(e, author2) {
+    if (typeof author2 === "object") return `${e.require(author2.given, "作者名")} ${e.require(author2.family, "作者姓")}`;
+    author2 = author2.trim();
+    return author2.includes(" ") ? author2 : `${e.require(null, "作者名")} ${author2}`;
+  }
+  function authors(e, { pair, many, keep = 1, limit = 3, sep = ", " }) {
+    const names2 = e.list("authors").map((a) => fullName(e, a));
+    if (!names2.length) return e.require(null, "作者");
+    const text = e.flag("et_al") || names2.length > limit ? `${names2.slice(0, keep).join(sep)} ${many}` : [names2.slice(0, -1).join(sep), names2.at(-1)].filter(Boolean).join(pair);
+    return e.get("role") ? `${text} ${e.get("role")}` : text;
+  }
+  function locator(e, prefix) {
+    const found = span(e.get("pages"));
+    if (found) return `${prefix} ${found}`;
+    return e.flag("specific") ? `${prefix} ${e.require(null, "页码")}` : null;
+  }
+  var ordinal = (value, template) => !value ? null : /^\d+$/.test(value) ? template.replace("{}", value) : value;
+  function joined(...parts) {
+    const text = parts.filter(Boolean).join(", ");
+    return text.endsWith(".") ? text : text + ".";
+  }
+
+  // src/styles/de.ts
+  var authors2 = (e) => authors(e, { pair: "/", sep: "/", many: "u.a." });
+  function locator2(e) {
+    const found = span(e.get("pages"));
+    if (found && /^\d/.test(found)) return `S. ${found}`;
+    return found || (e.flag("specific") ? `S. ${e.require(null, "页码")}` : null);
+  }
+  var styles = {
+    de_book: (e) => joined(
+      authors2(e),
+      e.need("title", "书名"),
+      e.get("volume"),
+      ordinal(e.get("edition"), "{}. Aufl."),
+      e.need("publisher", "出版社"),
+      e.need("year", "出版年份"),
+      locator2(e)
+    ),
+    /** ZStW 129 (2017), 630 — or, without a volume, JuS 2012, S. 238. */
+    de_article(e) {
+      const head2 = [authors2(e), e.need("title", "篇名")];
+      const journal = e.need("journal", "刊名"), year2 = e.need("year", "年份");
+      const pages3 = span(e.get("pages")) ?? e.require(null, "页码");
+      const volume = e.get("volume");
+      return joined(...head2, volume ? `${journal} ${volume} (${year2}), ${pages3}` : `${journal} ${year2}, S. ${pages3}`);
+    }
+  };
+
+  // src/styles/en.ts
+  var JOURNALS = {
+    "Yale L.J.": "Yale Law Journal",
+    "Harv. L. Rev.": "Harvard Law Review",
+    "Colum. L. Rev.": "Columbia Law Review",
+    "Stan. L. Rev.": "Stanford Law Review",
+    "U. Chi. L. Rev.": "University of Chicago Law Review",
+    "Mich. L. Rev.": "Michigan Law Review",
+    "Cal. L. Rev.": "California Law Review",
+    "N.Y.U. L. Rev.": "New York University Law Review",
+    "Am. J. Comp. L.": "American Journal of Comparative Law",
+    "Am. J. Int'l L.": "American Journal of International Law",
+    "Harv. Hum. Rts. J.": "Harvard Human Rights Journal"
+  };
+  var PUBLISHERS = {
+    "Stanford UP": "Stanford University Press",
+    "Oxford UP": "Oxford University Press",
+    "OUP": "Oxford University Press",
+    "Cambridge UP": "Cambridge University Press",
+    "CUP": "Cambridge University Press",
+    "Harvard UP": "Harvard University Press",
+    "Princeton UP": "Princeton University Press"
+  };
+  var fullForm = (table, value) => value && (table[value] ?? value);
+  var authors3 = (e) => authors(e, { pair: " & ", many: "et al.", keep: 2 });
+  function title(e) {
+    let text = e.need("title", "标题");
+    if (e.has("subtitle")) text += `: ${e.need("subtitle", "副标题")}`;
+    return `*${text}*`;
+  }
+  var styles2 = {
+    en_book(e) {
+      const head2 = [authors3(e), title(e) + (e.get("edition") ? ` (${e.get("edition")} ed.)` : "")];
+      const translator = e.get("translated_by") && `translated by ${e.get("translated_by")}`;
+      return joined(
+        ...head2,
+        translator,
+        e.require(fullForm(PUBLISHERS, e.get("publisher")), "出版社"),
+        e.need("year", "出版年份"),
+        locator(e, "p.")
+      );
+    },
+    /** Volume Journal FirstPage, Pin (Year) (第105条). */
+    en_article(e) {
+      const head2 = `${authors3(e)}, ${title(e)}`;
+      let source = `${e.need("volume", "卷数")} ${e.require(fullForm(JOURNALS, e.get("journal")), "刊名")} ${e.need("first_page", "首页")}`;
+      const pin = pages(e.get("pin"));
+      if (pin) source += `, ${pin}`;
+      return `${head2}, ${source} (${e.need("year", "年份")}).`;
+    },
+    en_case_us(e) {
+      const pin = e.get("pin") ? `, ${pages(e.get("pin"))}` : "";
+      const court = e.get("court") ? `${e.get("court")} ` : "";
+      return `*${caseName(e.need("name", "案例名称"))}*, ${e.need("volume", "卷数")} ${e.need("reporter", "案例报告")} ${e.need("first_page", "首页")}${pin} (${court}${e.need("year", "年份")}).`;
+    },
+    /** *Ridge v. Baldwin* [1964] AC 40; year in round brackets when it is not part of the reference. */
+    en_case_uk(e) {
+      const name = caseName(e.need("name", "案例名称"));
+      const year2 = e.need("year", "年份");
+      const pin = e.get("pin") ? `, ${e.get("pin")}` : "";
+      return `*${name}* ${e.flag("round") ? `(${year2})` : `[${year2}]`} ${e.need("report", "案例报告")}${pin}.`;
+    }
+  };
+
+  // src/styles/fr.ts
+  var authors4 = (e) => authors(e, { pair: " et ", many: "et al." });
+  var edition = (value) => ordinal(value, value === "1" ? "1re éd." : "{}e éd.");
+  var styles3 = {
+    fr_book: (e) => joined(
+      authors4(e),
+      `*${e.need("title", "书名")}*`,
+      edition(e.get("edition")),
+      e.need("publisher", "出版社"),
+      e.need("year", "出版年份"),
+      locator(e, "p.")
+    ),
+    fr_article: (e) => joined(
+      authors4(e),
+      `« ${e.need("title", "篇名")} »`,
+      `*${e.need("journal", "刊名")}*`,
+      e.need("year", "年份"),
+      e.get("issue") && `n° ${e.get("issue")}`,
+      locator(e, "p.")
+    )
+  };
+
+  // src/styles/it.ts
+  var authors5 = (e) => authors(e, { pair: " e ", many: "et al." });
+  var styles4 = {
+    it_book: (e) => joined(
+      authors5(e),
+      `*${e.need("title", "书名")}*`,
+      ordinal(e.get("edition"), "{}ª ed."),
+      e.need("publisher", "出版社"),
+      e.need("year", "出版年份"),
+      locator(e, "p.")
+    ),
+    it_article(e) {
+      const volume = e.get("volume");
+      return joined(
+        authors5(e),
+        `*${e.need("title", "篇名")}*`,
+        `in ${e.need("journal", "刊名")}`,
+        e.need("year", "年份"),
+        volume && roman(volume),
+        e.get("issue") && `n. ${e.get("issue")}`,
+        locator(e, "p.")
+      );
+    }
+  };
+
+  // src/styles/ja.ts
+  function authors6(e) {
+    const names2 = e.list("authors").map(String);
+    return names2.length ? names2.join("＝") : e.require(null, "作者");
+  }
+  var year = (e, label) => e.require(westernYear(e.get("year")), label);
+  function pages2(e) {
+    const found = span(e.get("pages"));
+    if (found) return `${found}頁`;
+    return e.flag("specific") ? `${e.require(null, "页码")}頁` : "";
+  }
+  var styles5 = {
+    ja_book: (e) => `${authors6(e)}『${e.need("title", "书名")}』（${e.need("publisher", "出版社")}，${year(e, "出版年份")}年）${pages2(e)}。`,
+    /** 作者「論文名」刊名巻号（年）頁. */
+    ja_article(e) {
+      const head2 = `${authors6(e)}「${e.need("title", "篇名")}」${e.need("journal", "刊名")}`;
+      const number = (e.get("volume") ? `${e.get("volume")}巻` : "") + (e.get("issue") ? `${e.get("issue")}号` : "");
+      return `${head2}${number || e.require(null, "巻号")}（${year(e, "年份")}年）${pages2(e)}。`;
+    }
+  };
+
+  // src/styles/style.ts
+  var sentence = (...parts) => parts.filter(Boolean).join("，") + "。";
+
+  // src/styles/law.ts
+  var LEVELS = [["article", "条"], ["paragraph", "款"], ["item", "项"], ["subitem", "目"]];
+  var provisions = (e) => LEVELS.map(([key, unit]) => {
+    const value = e.get(key);
+    return value == null ? "" : `第${toInt(value)}${unit}` + (key === "article" ? e.get("article_suffix") ?? "" : "");
+  }).join("");
+  var styles6 = {
+    statute(e) {
+      let title2 = `${e.get("issuer") ?? ""}《${statuteName(e.need("name", "法律名称"))}》`;
+      if (e.get("version")) title2 += `（${e.get("version")}）`;
+      else if (e.flag("amended")) title2 += `（${e.require(null, "修订或修正年份")}）`;
+      if (e.flag("repealed")) title2 += "（已废止）";
+      return `${title2}${provisions(e)}。`;
+    },
+    /** 制定机关《文件名》，文号（第72–75条）. */
+    normative(e) {
+      const name = e.need("name", "文件名称").replace(/^《|》$/g, "");
+      const issuer = e.get("issuer") ?? "";
+      const title2 = `${name.includes(issuer) ? "" : issuer}《${name}》`;
+      const number = docNumber(e.get("doc_no"));
+      const inline = e.flag("inline");
+      const mark = number ? inline ? `（${number}）` : number : e.dateParts("date") ? `${e.date("date")}发布` : e.require(null, "文号");
+      const part = e.get("section");
+      const where = part ? `第${part}节` + (e.get("subsection") ? `第${e.get("subsection")}小节` : "") : provisions(e);
+      return inline ? sentence(title2 + mark, where) : sentence(title2, mark, where);
+    },
+    /** 案名，法院全称（年份）案号+文书类型（第87–89条）. */
+    case(e) {
+      const number = e.get("case_no")?.trim().replace(/号$/, "");
+      const judged = e.dateParts("date") ? `，${e.date("date")}` : "";
+      return `${e.need("name", "案例名称")}，${e.need("court", "审判法院")}（${e.need("year", "年份")}）${e.require(number, "案号")}号${e.need("doc_type", "文书类型")}${judged}。`;
+    },
+    case_gazette: (e) => `${e.need("name", "案例名称")}，载《${e.get("gazette") ?? "最高人民法院公报"}》${e.need("year", "年份")}年第${e.need("issue", "期次")}期。`,
+    case_guiding: (e) => `${e.need("name", "案例名称")}，最高人民法院指导性案例${e.need("number", "案例序号")}号（${e.need("year", "发布年份")}年）。`,
+    case_library: (e) => `${e.need("name", "案例名称")}，人民法院案例库${e.need("library_no", "入库编号")}。`
+  };
+
+  // src/styles/ru.ts
+  var authors7 = (e) => authors(e, { pair: " и ", many: "и др.", limit: 2 });
+  var joined2 = (...parts) => parts.filter(Boolean).map((p) => p.replace(/\.+$/, "")).join(". ") + ".";
+  var styles7 = {
+    /** 出版社与年份之间用逗号，其他项之间用句点；版次括注. */
+    ru_book(e) {
+      const who = authors7(e);
+      const edition3 = ordinal(e.get("edition"), "{}-е изд.");
+      const title2 = `*${e.need("title", "书名")}*` + (edition3 ? ` (${edition3})` : "");
+      const imprint2 = `${e.need("publisher", "出版社")}, ${e.need("year", "出版年份")}`;
+      return joined2(who, title2, imprint2, locator(e, "С."));
+    },
+    /** 作者. *题目* // 刊名. 2023. № 3. С. 17-30. */
+    ru_article(e) {
+      const head2 = `${authors7(e).replace(/\.+$/, "")}. *${e.need("title", "篇名")}*`;
+      const source = joined2(
+        e.need("journal", "刊名"),
+        e.need("year", "年份"),
+        e.get("issue") && `№ ${e.get("issue")}`,
+        locator(e, "С.")
+      );
+      return `${head2} // ${source}`;
+    }
+  };
+
+  // src/styles/zh.ts
+  function author(e) {
+    if (e.flag("no_author")) return null;
+    const names2 = e.list("authors").map(String);
+    if (!names2.length) return e.require(null, "作者");
+    let text = names2.join("、") + (e.flag("et_al") ? "等" : "");
+    if (e.get("nationality")) text = `[${e.get("nationality")}]${text}`;
+    if (e.get("dynasty")) text = `（${e.get("dynasty")}）${text}`;
+    return text + (e.get("role") ?? "");
+  }
+  function head(e, label, suffix = "") {
+    const name = author(e);
+    const title2 = `《${e.need("title", label)}》${suffix}`;
+    return name ? `${name}：${title2}` : title2;
+  }
+  var edition2 = (value) => !value ? "" : /^\d+$/.test(value) ? `（第${value}版）` : `（${value}）`;
+  var publication = (e) => `${e.need("publisher", "出版社")}${e.need("year", "出版年份")}年版`;
+  function locator3(e) {
+    const found = pages(e.get("pages"));
+    if (found) return `第${found}页`;
+    if (e.get("chapter")) return e.get("chapter");
+    return e.flag("specific") ? `第${e.require(null, "页码")}页` : null;
+  }
+  var DATED_URL = /(19|20)\d{2}[/\-_]?(0[1-9]|1[0-2])[/\-_]?\d{2}/;
+  var styles8 = {
+    book(e) {
+      const title2 = head(e, "书名", edition2(e.get("edition")) + (e.get("volume") ?? ""));
+      const translators = e.has("translators") ? `${e.need("translators", "译者")}译` : null;
+      const collators = e.get("collators") && `${e.get("collators")}点校`;
+      const published = e.flag("self_published") ? "自版" : publication(e);
+      return sentence(title2, translators, collators, published, locator3(e));
+    },
+    article(e) {
+      const title2 = head(e, "篇名");
+      const source = `载《${e.need("journal", "刊名")}》${e.need("year", "年份")}年第${e.need("issue", "期次")}期`;
+      return sentence(title2, source, locator3(e));
+    },
+    chapter(e) {
+      const title2 = head(e, "篇名");
+      const translators = e.get("translators") && `${e.get("translators")}译`;
+      const editors = e.list("editors").map(String).join("、");
+      const role = e.has("editor_role") ? e.need("editor_role", "编者身份") : "主编";
+      const by = editors ? `${editors}${role}：` : "";
+      const source = `载${by}《${e.need("book_title", "文集名")}》${e.get("volume") ?? ""}`;
+      return sentence(title2, translators, source, publication(e), locator3(e));
+    },
+    newspaper(e) {
+      const title2 = head(e, "标题");
+      const source = `载《${e.need("paper", "报名")}》${e.date("date")}`;
+      const part = e.get("section");
+      return sentence(title2, source, `第${e.require(part && section(part), "版面")}版`);
+    },
+    /** 网站名与日期之间不加逗号；链接含日期的可省日期；无日期写访问日期（第51–54条）. */
+    web(e) {
+      const title2 = e.list("authors").length ? head(e, "标题") : `《${e.need("title", "标题")}》`;
+      let source = `载${e.need("site", "网站名")}`, visited = null;
+      const url = e.get("url"), accessed = e.dateParts("accessed");
+      if (e.dateParts("date")) source += e.date("date");
+      else if (url && DATED_URL.test(url)) {
+      } else if (accessed) visited = `${accessed.year}年${accessed.month}月${accessed.day}日访问`;
+      else source += e.require(null, "上传日期");
+      return sentence(title2, source, url, visited);
+    },
+    /** 第二版不要求链接（第56条）. */
+    wechat: (e) => sentence(head(e, "标题"), `载微信公众号“${e.need("account", "公众号名称")}”${e.date("date")}`),
+    thesis(e) {
+      const title2 = head(e, "题目");
+      const degree = `${e.need("school", "授予单位")}${e.need("year", "答辩年份")}年${e.need("degree", "博士/硕士")}学位论文`;
+      return sentence(title2, degree, locator3(e));
+    }
+  };
+
+  // src/styles/index.ts
+  var STYLES = { ...styles8, ...styles6, ...styles2, ...styles3, ...styles, ...styles4, ...styles7, ...styles5 };
+
+  // src/parse/util.ts
+  var compact = (fields) => Object.fromEntries(Object.entries(fields).filter(([, v]) => !blank(v)));
+  var groups = (m) => compact(Object.fromEntries(Object.entries(m.groups ?? {}).map(([k, v]) => [k, v?.trim()])));
+  function matched(pattern, text, type) {
+    const m = text.match(pattern);
+    return m && { type, ...groups(m) };
+  }
+  var date = (text) => Object.fromEntries((text.match(/\d+/g) ?? []).slice(0, 3).map((p, i) => [["year", "month", "day"][i], String(Number(p))]));
+  function search(pattern, text, group) {
+    const m = text.match(pattern);
+    return !m ? null : group === 0 ? m[0] : m.groups?.[group] ?? null;
+  }
+  var cut = (text, m) => m ? text.slice(0, m.index) + text.slice(m.index + m[0].length) : text;
+  var names = (text) => text.split(/[,，、]/).map((s) => s.trim()).filter(Boolean);
+
+  // src/parse/en.ts
+  var US_CASE = /^(?<name>.+?\sv\.?\s.+?),\s*(?<volume>\d+)\s+(?<reporter>[A-Z][A-Za-z0-9.' ]*?)\s+(?<first_page>\d+)(?:,\s*(?<pin>[\d–-]+))?\s*\((?:(?<court>[^()]*?)\s+)?(?<year>\d{4})\)\.?$/;
+  var UK_CASE = /^(?<name>.+?(?:\sv\.?\s.+?|'s Case)|R\s.+?|Re\s.+?)\s*(?<open>[[(])(?<year>\d{4})[\])]\s*(?<report>[^,]+?)(?:,\s*(?<pin>.+?))?\.?$/;
+  var BLUEBOOK = /^(?<authors>.+?),\s*(?<title>.+?),\s*(?<volume>\d+)\s+(?<journal>[A-Za-z.' &]+?)\s+(?<first_page>\d+)(?:,\s*(?<pin>[\d–-]+))?\s*\((?<year>\d{4})\)\.?$/;
+  var usCase = (text) => matched(US_CASE, text, "en_case_us");
+  var ukCase = (text) => {
+    const fields = matched(UK_CASE, text, "en_case_uk");
+    if (!fields) return null;
+    const { open, ...rest } = fields;
+    return open === "(" ? { ...rest, round: true } : rest;
+  };
+  var bluebookArticle = (text) => {
+    const fields = matched(BLUEBOOK, text, "en_article");
+    return fields && { ...fields, authors: String(fields.authors).split(/\s*&\s*|,\s*/).filter(Boolean) };
+  };
+  var parsers = [usCase, ukCase, bluebookArticle];
+
+  // src/parse/gbt.ts
+  var GBT = /^(?:(?<authors>(?:[[［（(][^\]］）)]+[\]］）)])?[^.[［]+?)\s*\.\s*)?(?<title>[^[［]+?)\s*[[［](?<kind>[A-Z/]+)[\]］]\s*(?<sep>\.|\/\/)\s*(?<rest>.*?)\.?$/;
+  var NATIONALITY = /^[[［（(](?<nationality>[^\]］）)]+)[\]］）)]\s*/;
+  var IMPRINT = String.raw`(?:[^:：,，.]+[:：]\s*)?(?<publisher>[^,，]+?)[,，]\s*(?<year>\d{4})(?:\s*[:：]\s*(?<pages>.+))?`;
+  var BOOK = new RegExp(String.raw`^(?:(?<translators>[^.]+?)\s*[,，]\s*译\s*\.\s*)?(?:第?(?<edition>\d+)\s*版\s*\.\s*)?${IMPRINT}$`);
+  var JOURNAL = /^(?<journal>[^,，]+)[,，]\s*(?<year>\d{4})\s*[,，]?\s*(?:\d+\s*)?\((?<issue>\d+)\)(?:\s*[:：]\s*(?<pages>.+))?$/;
+  var NEWSPAPER = /^(?<paper>[^,，]+)[,，]\s*(?<date>\d{4}(?:-\d{1,2}){0,2})\s*(?:\((?<section>\d+)\))?$/;
+  var THESIS = /^(?:[^:：,，.]+[:：]\s*)?(?<school>[^,，]+?)(?:[,，]\s*(?<year>\d{4}))?(?:\s*[:：]\s*(?<pages>.+))?$/;
+  var HOST = new RegExp(String.raw`^(?:(?<editors>[^.]+?)\s*\.\s*)?(?<book_title>[^.]+?)\s*(?:\[M\])?\s*\.\s*${IMPRINT}$`);
+  var ONLINE = /^(?:\((?<date>[\d-]+)\))?\s*(?:\[(?<accessed>[\d-]+)\])?\s*\.?\s*(?<url>\S+)$/;
+  function book(rest) {
+    const fields = matched(BOOK, rest, "book");
+    if (fields?.translators) fields.translators = names(String(fields.translators)).join("、");
+    return fields;
+  }
+  function newspaper(rest) {
+    const fields = matched(NEWSPAPER, rest, "newspaper");
+    return fields && { ...fields, date: date(String(fields.date)) };
+  }
+  function thesis(rest) {
+    const fields = matched(THESIS, rest, "thesis");
+    return fields && { year: null, ...fields, degree: null };
+  }
+  function chapter(rest) {
+    const fields = matched(HOST, rest, "chapter");
+    if (!fields) return null;
+    const { editors: by = "", ...found } = fields;
+    const [, editors = "", role] = String(by).match(/^(.*?)(?:\s*[,，]\s*(主编|编|编译|编著))?$/);
+    if (names(editors).length) Object.assign(found, { editors: names(editors), editor_role: role ?? null });
+    const volume = String(found.book_title).match(/^(.+?)\s*[:：]\s*(第.+[卷辑册])$/);
+    if (volume) Object.assign(found, { book_title: volume[1], volume: volume[2] });
+    return found;
+  }
+  function online(rest) {
+    const fields = matched(ONLINE, rest, "web");
+    if (!fields) return null;
+    for (const key of ["date", "accessed"]) if (fields[key]) fields[key] = date(String(fields[key]));
+    return { ...fields, site: null };
+  }
+  var KINDS = {
+    M: book,
+    J: (rest) => matched(JOURNAL, rest, "article"),
+    N: newspaper,
+    D: thesis,
+    C: chapter,
+    A: chapter,
+    "EB/OL": online
+  };
+  var gbt7714 = (text) => {
+    const m = text.match(GBT);
+    if (!m) return null;
+    const { authors: by = "", title: title2, kind, sep, rest } = m.groups;
+    const read = KINDS[sep === "//" ? "C" : kind];
+    if (!read) throw new ParseError(`暂不支持 GB/T 7714 的 [${kind}] 类型，请改用“逐项填写”。`);
+    const fields = read(rest);
+    if (!fields) throw new ParseError(`无法识别出版信息：${rest}`);
+    const nation = by.match(NATIONALITY);
+    if (nation) fields.nationality = nation.groups.nationality;
+    let authors9 = names(nation ? by.slice(nation[0].length) : by);
+    if (authors9.at(-1) === "等") [authors9, fields.et_al] = [authors9.slice(0, -1), true];
+    if (authors9.length) fields.authors = authors9;
+    return { title: title2.trim(), ...fields };
+  };
+  var parsers2 = [gbt7714];
+
+  // src/parse/ja.ts
+  var JAPANESE = /[぀-ヿ『』「」]|頁|巻/;
+  var BOOK2 = /^(?<authors>[^『「]*?)\s*『(?<title>[^』]+)』(?<rest>.*)$/;
+  var ARTICLE = /^(?<authors>[^『「]*?)\s*「(?<title>[^」]+)」(?<rest>(?!.*編\s*『).*)$/;
+  var JOURNAL2 = /^[\s、，,]*『?(?<journal>[^\d『』（(、，,]+)』?\s*[、，,]?\s*(?:第?(?<volume>\d+)\s*巻)?\s*(?:第?(?<issue>\d+)\s*号)?/;
+  var YEAR = /(?<year>(?:明治|大正|昭和|平成|令和)\s*(?:元|\d+)|\d{4})\s*年?/;
+  var PAGES = /(?<pages>\d+(?:\s*[-–~～]\s*\d+)?)\s*頁|p+\.\s*(?<p>\d+(?:\s*[-–~～]\s*\d+)?)/;
+  function common(m, rest) {
+    const pages3 = rest.match(PAGES);
+    rest = cut(rest, pages3);
+    const year2 = rest.match(YEAR);
+    const authors9 = m.groups.authors.replace(/^[\s、，,]+|[\s、，,]+$/g, "").split(/\s*[＝=、]\s*/).filter(Boolean);
+    const fields = { authors: authors9, title: m.groups.title, year: year2?.groups.year, pages: pages3 && (pages3.groups.pages ?? pages3.groups.p) };
+    return [fields, cut(rest, year2)];
+  }
+  var japanese = (text) => {
+    if (!JAPANESE.test(text)) return null;
+    text = text.replace(/[。.\s]+$/, "");
+    const book3 = text.match(BOOK2);
+    if (book3) {
+      const [fields2, rest] = common(book3, book3.groups.rest);
+      return { type: "ja_book", ...fields2, publisher: rest.replace(/^[\s（）()，,、・]+|[\s（）()，,、・]+$/g, "") || null };
+    }
+    const article2 = text.match(ARTICLE);
+    if (!article2) return null;
+    const source = article2.groups.rest.match(JOURNAL2);
+    const [fields] = common(article2, article2.groups.rest.slice(source[0].length));
+    return { type: "ja_article", ...fields, ...groups(source) };
+  };
+  var parsers3 = [japanese];
+
+  // src/parse/ru.ts
+  var INITIALS = String.raw`(?:[А-ЯЁ]\.\s*){1,2}`;
+  var FAMILY = String.raw`[А-ЯЁ][а-яё]+(?:-[А-ЯЁ][а-яё]+)?`;
+  var AUTHOR = new RegExp(String.raw`(?:(?<family>${FAMILY})\s+(?<initials>${INITIALS})|(?<initials2>${INITIALS})(?<family2>${FAMILY}))\s*,?\s*`, "y");
+  var EDITION = /^(?<edition>\d+)-е\s+изд\.?.*$/;
+  var IMPRINT2 = /^(?:[^:]+:\s*)?(?<publisher>[^,]+?),\s*(?<year>\d{4})$/;
+  var PAGES2 = /^С\.\s*(?<pages>.+)$/;
+  var ARTICLE2 = /^(?<journal>.+?)\.\s*(?<year>\d{4})(?:\.\s*(?:Т\.\s*(?<volume>\d+)\.\s*)?№\s*(?<issue>[\d\-–]+))?(?:\.\s*С\.\s*(?<pages>[\d\s\-–]+))?\.?$/;
+  function authors8(text) {
+    const found = [];
+    let m, pos = 0;
+    for (AUTHOR.lastIndex = 0; m = AUTHOR.exec(text); pos = AUTHOR.lastIndex) {
+      const g = m.groups;
+      const initials = (g.initials ?? g.initials2).trim().replace(/\.\s*/g, ". ").trim();
+      found.push(`${initials} ${g.family ?? g.family2}`);
+    }
+    return [found, text.slice(pos)];
+  }
+  var segments = (text) => text.replace(/\.?\s+[–—]\s+/g, ". ").replace(/\s*:\s*/g, ": ").replace(/[.\s]+$/, "").split(/(?<![СТ])\.\s+/).map((s) => s.trim()).filter(Boolean);
+  function article(fields, rest) {
+    const at = rest.indexOf("//");
+    const m = rest.slice(at + 2).trim().match(ARTICLE2);
+    return m && { type: "ru_article", ...fields, title: rest.slice(0, at).trim().replace(/\.$/, ""), ...groups(m) };
+  }
+  function book2(fields, rest) {
+    const title2 = [];
+    for (const segment of segments(rest)) {
+      const m = segment.match(EDITION) ?? segment.match(IMPRINT2) ?? segment.match(PAGES2);
+      if (m) Object.assign(fields, groups(m));
+      else if (!/^\d+\s*с$/.test(segment)) title2.push(segment);
+    }
+    return { type: "ru_book", ...fields, title: title2.join(". ") };
+  }
+  var russian = (text) => {
+    if (!/[А-Яа-яЁё]/.test(text)) return null;
+    const [names2, rest] = authors8(text.trim());
+    return rest.includes("//") ? article({ authors: names2 }, rest) : book2({ authors: names2 }, rest);
+  };
+  var parsers4 = [russian];
+
+  // src/parse/western.ts
+  var NOTHING = /(?!)/;
+  var lexicon = (lang, marker, edition3, locator4, volume = NOTHING, role = "({})") => ({ lang, marker, edition: edition3, locator: locator4, volume, role });
+  var GERMAN = lexicon(
+    "de",
+    /Aufl\.|Rn\.|Hrsg\.|\bBd\.|\bS\.\s*\d|\bff?\.(?:\s|$)|[äöüßÄÖÜ]|§|\(\d{4}\),\s*\d/,
+    /^(?<edition>\d+)\.\s*Aufl\.?(?:\s+(?<year>\d{4}))?$/,
+    /^(?<pages>(?:§|Rn\.|S\.|Art\.).+)$/,
+    /^(?:Band|Bd\.)\s*(?<volume>\S+)$/
+  );
+  var ITALIAN = lexicon(
+    "it",
+    /a cura di|trad\. it\.|\bss\.|Giuffrè|Cedam|Zanichelli|Utet|Jovene|Il Mulino|\d\s*ª|\bRiv\.|\bdell['’]|\b(?:Milano|Torino|Roma|Napoli|Padova|Bologna|Firenze|della|delle|dello|degli|del|nel|nella|il|gli|dei)\b/,
+    /^(?<edition>\d+)\s*[ªa°]?\s*ed\.?$/,
+    /^pp?\.\s*(?<pages>.+)$/,
+    /^(?:vol\.\s*)?(?<volume>[IVXLC]+|\d{1,3})$/
+  );
+  var FRENCH = lexicon(
+    "fr",
+    /[«»]|(?:^|[^\p{L}])éd\.|\(dir\.\)|Mélanges|Thèse|\bop\. cit\.|\bPUF\b|LGDJ|Dalloz|Montchrestien|Economica|\bParis\b|\bn°|\b(?:de la|du|des|les|pour|dans)\b|[éèêàçœ]/u,
+    /^(?<edition>\d+)(?:e|re|ème)\s*éd\.?$/,
+    /^pp?\.\s*(?<pages>.+)$/
+  );
+  var ENGLISH = lexicon("en", /(?:)/, /^(?<edition>\d+(?:st|nd|rd|th|d))\s+edn?\.?$/, /^(?:pp?\.|at)\s*(?<pages>.+)$/, NOTHING, "{}");
+  var LEXICONS = [GERMAN, ITALIAN, FRENCH, ENGLISH];
+  var CITIES = /* @__PURE__ */ new Set([
+    "Berlin",
+    "München",
+    "Munich",
+    "Köln",
+    "Heidelberg",
+    "Tübingen",
+    "Frankfurt am Main",
+    "Frankfurt a.M.",
+    "Baden-Baden",
+    "Wien",
+    "Zürich",
+    "Paris",
+    "Lyon",
+    "Bruxelles",
+    "Milano",
+    "Roma",
+    "Torino",
+    "Napoli",
+    "Padova",
+    "Bologna",
+    "Firenze",
+    "London",
+    "New York",
+    "Boston",
+    "Chicago"
+  ]);
+  var ISSUE = /^(?:n°|n\.|No\.)\s*(?<issue>\d+)$/;
+  var YEAR2 = /^(?:(?<before>.*?)\s+)?(?<year>\d{4})\.?$/;
+  var WORD = String.raw`(?:[A-ZÀ-Þ][\p{L}'’.\-]*|von|van|de|der|da|di|du|zu|le|la)`;
+  var INVERTED = new RegExp(String.raw`^(?<family>${WORD}(?:\s+${WORD})*),\s*(?<given>${WORD}(?:\s+${WORD})*)$`, "u");
+  var CAPS = /^(?<family>[A-ZÀ-Þ'’-]{2,})\s*\((?<given>[^)]+)\)$/u;
+  var INITIALS_AFTER = /^(?<family>[A-ZÀ-Þ][\p{L}'’-]+)\s+(?<given>(?:[A-Z]\.\s*)+)$/u;
+  var ET_AL = /\s*(?:et al\.?|u\.\s?a\.|e altri|and others)$/;
+  var ROLE = /\s*\(?(?<role>Hrsg\.|dir\.|a cura di|eds?\.)\)?$/;
+  var JOINERS = /\s*(?:&|\/|;|(?<!\p{L})(?:and|et|und|e)(?!\p{L}))\s*/u;
+  var titleCase = (s) => s.replace(/\p{L}+/gu, (w) => w[0] + w.slice(1).toLowerCase());
+  function person(name) {
+    name = name.trim();
+    for (const pattern of [INVERTED, CAPS, INITIALS_AFTER]) {
+      const g = name.match(pattern)?.groups;
+      if (g) return `${g.given.trim()} ${g.family === g.family.toUpperCase() ? titleCase(g.family) : g.family}`;
+    }
+    return name;
+  }
+  function people(text, lex) {
+    const fields = {};
+    const etAl = text.match(ET_AL);
+    if (etAl) [text, fields.et_al] = [text.slice(0, etAl.index), true];
+    const role = text.match(ROLE);
+    if (role) [text, fields.role] = [text.slice(0, role.index), lex.role.replace("{}", role.groups.role)];
+    return { authors: text.split(JOINERS).filter((p) => p.trim()).map(person), ...fields };
+  }
+  function splitAuthor(text) {
+    let g = text.match(/^(?<author>[^:,]+,[^:,]+(?:\/[^:,]+,[^:,]+)*):\s+(?<rest>.+)$/)?.groups;
+    if (g && g.author.split("/").every((p) => INVERTED.test(p.trim()))) return [g.author.replace(/\//g, " / "), g.rest];
+    g = text.match(/^(?<author>[^,]+?),\s+(?<rest>.+)$/)?.groups;
+    return g ? [g.author, g.rest] : null;
+  }
+  var OSCOLA = /\s*\((?:(?<edition>\d+\w*)\s+edn?,\s*)?(?<publisher>[^()\d][^()]*?)\s+(?<year>\d{4})\)\s*(?<pages>[\d–-]+)?\.?$/;
+  var BLUEBOOK_BOOK = /\s+(?<pages>\d+(?:[–-]\d+)?)?\s*\((?:(?<edition>\d+\w*)\s+ed\.\s+)?(?<year>\d{4})\)\.?$/;
+  function plain(text) {
+    for (const pattern of [OSCOLA, BLUEBOOK_BOOK]) {
+      const m = text.match(pattern);
+      if (!m) continue;
+      const d = m.groups;
+      const parts = [d.edition && `${d.edition} ed.`, d.publisher, d.year, d.pages && `p. ${d.pages}`];
+      return [text.slice(0, m.index), ...parts.filter(Boolean)].join(", ");
+    }
+    return text;
+  }
+  function classify(parts, lex) {
+    const fields = {}, left = [];
+    for (let part of parts) {
+      const m = [lex.edition, lex.locator, lex.volume, ISSUE].map((p) => part.match(p)).find(Boolean);
+      if (m) {
+        Object.assign(fields, groups(m));
+        continue;
+      }
+      const year2 = part.match(YEAR2)?.groups;
+      if (year2) [fields.year, part] = [year2.year, year2.before ?? ""];
+      if (part && !CITIES.has(part)) left.push(part);
+    }
+    if (lex === GERMAN && fields.volume) fields.volume = `Band ${fields.volume}`;
+    return [fields, left];
+  }
+  var GERMAN_ARTICLE = /^(?<title>.+?),\s*(?<journal>[^,]+?)\s+(?<volume>\d+)\s+\((?<year>\d{4})\),\s*(?<pages>.+?)\.?$/;
+  var GUILLEMETS = /^«\s*(?<title>.+?)\s*»\s*,?\s*(?<rest>.*)$/;
+  var inCollection = (part) => part.startsWith("in ");
+  var european = (text) => {
+    if (!/[A-Za-z]/.test(text) || !/\d{4}/.test(text)) return null;
+    const lex = LEXICONS.find((l) => l.marker.test(text));
+    text = text.trim().replace(/\.+$/, "");
+    const split = splitAuthor(lex === ENGLISH ? plain(text) : text);
+    if (!split) return null;
+    const [author2, rest] = split, who = people(author2, lex);
+    const article2 = lex === GERMAN ? rest.match(GERMAN_ARTICLE) : null;
+    if (article2) return { type: "de_article", ...who, ...groups(article2) };
+    const quoted = rest.match(GUILLEMETS)?.groups;
+    const [title2, ...parts] = quoted ? [quoted.title, ...quoted.rest.split(/,\s+/)] : rest.split(/,\s+/);
+    const kind = quoted || lex === ITALIAN && parts.some(inCollection) ? "article" : "book";
+    if (kind === "book" && [title2, ...parts].some(inCollection)) return null;
+    const [fields, left] = classify(parts, lex);
+    if (kind === "article") {
+      return left.length ? { type: `${lex.lang}_article`, ...who, title: title2, journal: left[0].replace(/^in /, "").trim(), ...fields } : null;
+    }
+    return { type: `${lex.lang}_book`, ...who, title: [title2, ...left.slice(0, -1)].join(", "), ...fields, publisher: left.at(-1) ?? null };
+  };
+  var parsers5 = [european];
+
+  // src/parse/zh.ts
+  var NUMERAL = "[\\d一二三四五六七八九十百千零〇两]+";
+  var STATUTE = new RegExp(`^《?(?<name>[^《》\\s第]+?(?:法典|法|条例|规定|办法|解释))》?\\s*第(?<article>${NUMERAL})条(?<article_suffix>之[一二三四五六七八九十]+)?(?:第(?<paragraph>${NUMERAL})款)?(?:第[（(]?(?<item>${NUMERAL})[）)]?项)?$`);
+  var DOCUMENT = /^《?(?<name>.+?)》?[\s，,]*[（(]?(?<doc_no>[一-龥]+[(（[【［〔]\d{4}[)）\]】］〕]\d+号)[）)]?$/;
+  var statute = (text) => matched(STATUTE, text, "statute");
+  var document2 = (text) => matched(DOCUMENT, text, "normative");
+  var CASE_NAME = /(?<name>[^，,。：:；;\s]+?案)(?=[，,。：:；;\s（(]|$)/;
+  var CASE_NO = /[（(〔[](?<year>\d{4})[）)〕\]]\s*(?<case_no>[^号，,。\s]+?)\s*号/;
+  var COURT = /(?<court>[一-龥]+?法院)/;
+  var DOC_TYPE = /(?<doc_type>(?:民事|刑事|行政|执行|国家赔偿|赔偿)(?:判决书|裁定书|调解书|决定书))/;
+  var JUDGED = /\d{4}\s*年\s*\d{1,2}\s*月\s*\d{1,2}\s*日/;
+  var caseOf = (text, type, fields) => ({ type, name: search(CASE_NAME, text, "name"), ...compact(fields) });
+  var caseLibrary = (text) => {
+    const number = text.includes("案例库") && text.match(/\d{4}-\d{2}-\d-\d{3}-\d{3}/);
+    return number ? caseOf(text, "case_library", { library_no: number[0] }) : null;
+  };
+  var caseGuiding = (text) => {
+    const m = text.match(/指导(?:性)?案例\s*(?:第\s*)?(?<number>\d+)\s*号/);
+    if (!m) return null;
+    return { ...caseOf(text, "case_guiding", { number: m.groups.number }), year: search(/(?<year>\d{4})\s*年?/, cut(text, m), "year") };
+  };
+  var caseGazette = (text) => {
+    const m = text.match(/《?(?<gazette>[^《》\s，,、]*公报)》?\s*[,，]?\s*(?<year>\d{4})\s*(?:年\s*第?|[-—/.]|[（(])\s*(?<issue>\d{1,2})\s*[期）)]?/);
+    return m && caseOf(text, "case_gazette", groups(m));
+  };
+  var judgment = (text) => {
+    const number = text.match(CASE_NO), name = text.match(CASE_NAME);
+    const rest = name ? text.slice(name.index + name[0].length) : text;
+    const court = search(COURT, rest, "court");
+    if (!(number || name && court)) return null;
+    const judged = rest.match(JUDGED);
+    return caseOf(text, "case", {
+      court,
+      year: number?.groups.year ?? search(/(?<year>\d{4})\s*年/, rest, "year"),
+      case_no: number?.groups.case_no,
+      doc_type: search(DOC_TYPE, rest, "doc_type"),
+      date: judged && date(judged[0])
+    });
+  };
+  var NOTE = {
+    author: /^\s*(?:[[［【（(](?<nationality>[^\]］】）)]{1,4})[\]］】）)])?\s*(?<names>.*?)\s*(?:著|撰)?\s*[：:，,]?\s*$/,
+    inJournal: /(?<year>\d{4})\s*(?:年\s*第\s*(?<issue>\d+)\s*期|[（(]\s*(?<issue2>\d+)\s*[）)])/,
+    inBook: /载\s*(?:(?<editors>[^《》：:，,]+?)(?<editor_role>主编|编著|编译|编)\s*[：:]?\s*)?《/,
+    edition: /[（(]?第\s*(?<edition>\d+)\s*版[）)]?|[（(]?(?<edition_name>修订版|增订版)[）)]?/,
+    volume: /第[\d一二三四五六七八九十]+[卷册辑](?:第[\d一二三四五六七八九十]+[卷册辑分册]+)?/,
+    translators: /(?<translators>[^，,。\s》《]+?)\s*译(?![者本文林])/,
+    publisher: /(?<publisher>[^，,。\s》《\d]+?(?:出版社|书局|印书馆|书店|出版公司))/,
+    year: /(?<!\d)(?<year>1[89]\d{2}|20\d{2})(?!\d|\s*页|\s*[-–—~～]\s*\d)/,
+    pages: /第?\s*(?<pages>\d+(?:\s*[-–—~～]\s*\d+)?)\s*页/
+  };
+  var imprint = (text) => ({
+    volume: search(NOTE.volume, text, 0),
+    publisher: search(NOTE.publisher, text, "publisher"),
+    year: search(NOTE.year, text, "year")
+  });
+  var note = (text) => {
+    const titles = [...text.matchAll(/《([^《》]+)》/g)].map((m) => m[1]);
+    if (!titles.length) return null;
+    const head2 = text.slice(0, text.indexOf("《")), tail = text.slice(text.indexOf("》") + 1);
+    const author2 = head2.match(NOTE.author).groups;
+    const fields = {
+      title: titles[0],
+      authors: author2.names.split(/[、，,]/).map((s) => s.trim()).filter(Boolean),
+      nationality: author2.nationality,
+      pages: search(NOTE.pages, tail, "pages")
+    };
+    const journal = tail.match(NOTE.inJournal), host = tail.match(NOTE.inBook);
+    if (titles.length > 1 && journal) {
+      const { year: year2, issue, issue2 } = journal.groups;
+      Object.assign(fields, { type: "article", journal: titles[1], year: year2, issue: issue ?? issue2 });
+    } else if (titles.length > 1 && host) {
+      Object.assign(fields, {
+        type: "chapter",
+        book_title: titles[1],
+        editors: host.groups.editors,
+        editor_role: host.groups.editor_role,
+        translators: search(NOTE.translators, tail.slice(0, host.index), "translators"),
+        ...imprint(tail.slice(host.index + host[0].length))
+      });
+    } else {
+      const edition3 = tail.match(NOTE.edition)?.groups;
+      Object.assign(fields, {
+        type: "book",
+        edition: edition3 && (edition3.edition ?? edition3.edition_name),
+        translators: search(NOTE.translators, tail, "translators"),
+        ...imprint(tail)
+      });
+    }
+    return compact(fields);
+  };
+  var parsers6 = [statute, document2, caseLibrary, caseGuiding, caseGazette, judgment, note];
+
+  // src/parse/index.ts
+  var PARSERS = [...parsers2, ...parsers3, ...parsers4, ...parsers6, ...parsers, ...parsers5];
+  function parse(text) {
+    text = text.trim();
+    for (const recognise of PARSERS) {
+      const fields = recognise(text);
+      if (fields) return fields;
+    }
+    throw new ParseError("无法识别这条原文的格式，请改用“逐项填写”。");
+  }
+
+  // src/yinzhu.ts
+  function cite(fields) {
+    if (fields.unverified) throw new UnverifiedSourceError("未经核实的文献不得引用（第2条）。请先找到原文，核对作者、篇名和出处后再转换。");
+    const render = STYLES[String(fields.type)];
+    if (!render) throw new Error(`未知的文献类型：${fields.type}。可用类型：${Object.keys(STYLES).join(", ")}`);
+    const entry = new Entry(fields);
+    return { text: render(entry), missing: entry.missing };
+  }
+
+  // src/ui/types.ts
+  var TYPES = {
+    book: ["中文图书", [
+      ["authors", "作者", "list", 1],
+      ["nationality", "国籍（如 美、德）"],
+      ["dynasty", "朝代（古籍）"],
+      ["role", "著作方式（主编、编、整理）"],
+      ["title", "书名", "text", 1, 1],
+      ["edition", "版次（数字或“修订版”）"],
+      ["volume", "卷册（如 第3卷）"],
+      ["translators", "译者"],
+      ["collators", "点校者"],
+      ["publisher", "出版社", "text", 1],
+      ["year", "出版年份", "text", 1],
+      ["pages", "页码"],
+      ["chapter", "章节（代替页码）"],
+      ["is_translation", "译著（必须写译者）", "check"],
+      ["specific", "引用了具体内容（必须标页码）", "check"],
+      ["et_al", "作者较多，后加“等”", "check"],
+      ["no_author", "常用典籍或辞书，不写作者", "check"]
+    ]],
+    article: ["期刊论文", [
+      ["authors", "作者", "list", 1],
+      ["nationality", "国籍"],
+      ["title", "篇名", "text", 1, 1],
+      ["journal", "刊名", "text", 1],
+      ["year", "年份", "text", 1],
+      ["issue", "期次", "text", 1],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    chapter: ["文集、集刊文章", [
+      ["authors", "作者", "list", 1],
+      ["nationality", "国籍"],
+      ["title", "篇名", "text", 1, 1],
+      ["translators", "译者"],
+      ["editors", "编者", "list"],
+      ["editor_role", "编者身份（默认 主编）"],
+      ["book_title", "文集或集刊名", "text", 1, 1],
+      ["volume", "卷、辑（如 第1卷）"],
+      ["publisher", "出版社", "text", 1],
+      ["year", "出版年份", "text", 1],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    newspaper: ["报纸文章", [["authors", "作者", "list", 1], ["title", "标题", "text", 1, 1], ["paper", "报纸名称", "text", 1], ["date", "出版日期", "date", 1], ["section", "版面", "text", 1]]],
+    web: ["网络文献", [
+      ["authors", "作者（无署名可空）", "list"],
+      ["title", "标题", "text", 1, 1],
+      ["site", "网站名称", "text", 1],
+      ["date", "上传日期", "date"],
+      ["url", "网页链接", "text", 0, 1],
+      ["accessed", "访问日期（无上传日期时）", "date"]
+    ]],
+    wechat: ["微信公众号文章", [["authors", "作者", "list", 1], ["title", "标题", "text", 1, 1], ["account", "公众号名称", "text", 1], ["date", "发布日期", "date", 1]]],
+    thesis: ["学位论文", [
+      ["authors", "作者", "list", 1],
+      ["title", "题目", "text", 1, 1],
+      ["school", "授予单位", "text", 1],
+      ["year", "答辩年份", "text", 1],
+      ["degree", "学位层级（博士、硕士）", "text", 1],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    statute: ["法律法规", [
+      ["name", "法律名称", "text", 1, 1],
+      ["issuer", "制定机关（法规规章可选）"],
+      ["version", "版本（如 2013年修正）"],
+      ["article", "条", "text", 1],
+      ["article_suffix", "条后缀（如 之一）"],
+      ["paragraph", "款"],
+      ["item", "项"],
+      ["amended", "法律修改过（必须写版本）", "check"],
+      ["repealed", "已废止", "check"]
+    ]],
+    normative: ["规范性文件", [
+      ["issuer", "制定机关"],
+      ["name", "文件名称", "text", 1, 1],
+      ["doc_no", "文号", "text", 1],
+      ["date", "发布日期（无文号时）", "date"],
+      ["section", "节（如 四）"],
+      ["subsection", "小节（如 一）"],
+      ["article", "条"],
+      ["inline", "文号用括号括注", "check"]
+    ]],
+    case: ["裁判文书", [
+      ["name", "案例名称", "text", 1, 1],
+      ["court", "审判法院（全称）", "text", 1, 1],
+      ["year", "案号年份", "text", 1],
+      ["case_no", "案号（年份之后的部分）", "text", 1],
+      ["doc_type", "文书类型（如 民事判决书）", "text", 1],
+      ["date", "裁判日期（可选）", "date"]
+    ]],
+    case_gazette: ["公报案例", [["name", "案例名称", "text", 1, 1], ["gazette", "公报名称（默认 最高人民法院公报）"], ["year", "年份", "text", 1], ["issue", "期次", "text", 1]]],
+    case_guiding: ["指导性案例", [["name", "案例名称", "text", 1, 1], ["number", "指导性案例序号", "text", 1], ["year", "发布年份", "text", 1]]],
+    case_library: ["人民法院案例库", [["name", "案例名称", "text", 1, 1], ["library_no", "入库编号", "text", 1]]],
+    en_book: ["英文图书", [
+      ["authors", "Authors（名 姓；多人用分号）", "enlist", 1, 1],
+      ["role", "ed. / eds."],
+      ["title", "Title", "text", 1, 1],
+      ["subtitle", "Subtitle"],
+      ["edition", "Edition（如 10th）"],
+      ["translated_by", "Translator"],
+      ["publisher", "Publisher", "text", 1],
+      ["year", "Year", "text", 1],
+      ["pages", "Pages"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    en_article: ["英文期刊论文", [
+      ["authors", "Authors（名 姓；多人用分号）", "enlist", 1, 1],
+      ["title", "Title", "text", 1, 1],
+      ["volume", "Volume", "text", 1],
+      ["journal", "Journal（可用缩写）", "text", 1],
+      ["first_page", "First page", "text", 1],
+      ["pin", "Pin cite"],
+      ["year", "Year", "text", 1]
+    ]],
+    en_case_us: ["美国案例", [
+      ["name", "Case name", "text", 1, 1],
+      ["volume", "Volume", "text", 1],
+      ["reporter", "Reporter（如 U.S.、F.2d）", "text", 1],
+      ["first_page", "First page", "text", 1],
+      ["pin", "Pin cite"],
+      ["court", "Court（如 D.C. Cir.）"],
+      ["year", "Year", "text", 1]
+    ]],
+    en_case_uk: ["英国案例", [
+      ["name", "Case name", "text", 1, 1],
+      ["year", "Year", "text", 1],
+      ["report", "Report（如 AC 40、EWCA Civ 1599）", "text", 1, 1],
+      ["pin", "Pin cite（如 para. 30）"],
+      ["round", "年份用圆括号（年份不是报告编号的一部分）", "check"]
+    ]],
+    fr_book: ["法文图书", [
+      ["authors", "Auteurs（名 姓；多人用分号）", "enlist", 1, 1],
+      ["role", "编者写 (dir.)"],
+      ["title", "Titre", "text", 1, 1],
+      ["edition", "版次（数字）"],
+      ["publisher", "Éditeur", "text", 1],
+      ["year", "Année", "text", 1],
+      ["pages", "页码（如 16-29、197 s.）"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    fr_article: ["法文期刊论文", [
+      ["authors", "Auteurs（名 姓；多人用分号）", "enlist", 1, 1],
+      ["title", "Titre", "text", 1, 1],
+      ["journal", "Revue（可用通行缩写）", "text", 1],
+      ["year", "Année", "text", 1],
+      ["issue", "期号（n°）"],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    de_book: ["德文图书", [
+      ["authors", "Autoren（名 姓；多人用分号）", "enlist", 1, 1],
+      ["role", "编者写 (Hrsg.)"],
+      ["title", "Titel", "text", 1, 1],
+      ["volume", "卷（如 Band I）"],
+      ["edition", "版次（数字）"],
+      ["publisher", "Verlag", "text", 1],
+      ["year", "Jahr", "text", 1],
+      ["pages", "位置（如 § 15 Rn. 19，或页码 46 ff.）", "text", 0, 1],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    de_article: ["德文期刊论文", [
+      ["authors", "Autoren（名 姓；多人用分号）", "enlist", 1, 1],
+      ["title", "Titel", "text", 1, 1],
+      ["journal", "Zeitschrift（可用缩写，如 NJW）", "text", 1],
+      ["volume", "卷（如 129）"],
+      ["year", "Jahr", "text", 1],
+      ["pages", "页码（如 630、238 f.）", "text", 1]
+    ]],
+    it_book: ["意大利文图书", [
+      ["authors", "Autori（名 姓；多人用分号）", "enlist", 1, 1],
+      ["role", "编者写 (a cura di)"],
+      ["title", "Titolo", "text", 1, 1],
+      ["edition", "版次（数字）"],
+      ["publisher", "Editore", "text", 1],
+      ["year", "Anno", "text", 1],
+      ["pages", "页码（如 34 ss.）"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    it_article: ["意大利文期刊论文", [
+      ["authors", "Autori（名 姓；多人用分号）", "enlist", 1, 1],
+      ["title", "Titolo", "text", 1, 1],
+      ["journal", "Rivista", "text", 1],
+      ["year", "Anno", "text", 1],
+      ["volume", "卷（数字会改成罗马数字）"],
+      ["issue", "期号"],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    ru_book: ["俄文图书", [
+      ["authors", "Авторы（名 姓，如 И. И. Иванов；多人用分号）", "enlist", 1, 1],
+      ["title", "Название", "text", 1, 1],
+      ["edition", "版次（数字）"],
+      ["publisher", "Издательство", "text", 1],
+      ["year", "Год", "text", 1],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    ru_article: ["俄文期刊论文", [
+      ["authors", "Авторы（名 姓；多人用分号）", "enlist", 1, 1],
+      ["title", "Название", "text", 1, 1],
+      ["journal", "Журнал", "text", 1],
+      ["year", "Год", "text", 1],
+      ["issue", "期号（№）"],
+      ["pages", "页码"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    ja_book: ["日文图书", [
+      ["authors", "著者（多人用顿号）", "list", 1],
+      ["title", "書名", "text", 1, 1],
+      ["publisher", "出版社", "text", 1],
+      ["year", "出版年（公元或年号，如 昭和46年）", "text", 1],
+      ["pages", "頁"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]],
+    ja_article: ["日文期刊论文", [
+      ["authors", "著者（多人用顿号）", "list", 1],
+      ["title", "論文名", "text", 1, 1],
+      ["journal", "刊名", "text", 1],
+      ["volume", "巻"],
+      ["issue", "号"],
+      ["year", "年（公元或年号）", "text", 1],
+      ["pages", "頁"],
+      ["specific", "引用了具体内容（必须标页码）", "check"]
+    ]]
+  };
+  var GROUPS = [
+    ["中文文献", ["book", "article", "chapter", "newspaper", "web", "wechat", "thesis"]],
+    ["法律与案例", ["statute", "normative", "case", "case_gazette", "case_guiding", "case_library"]],
+    ["英文", ["en_book", "en_article", "en_case_us", "en_case_uk"]],
+    ["其他外文", ["fr_book", "fr_article", "de_book", "de_article", "it_book", "it_article", "ru_book", "ru_article", "ja_book", "ja_article"]]
+  ];
+  var SAMPLE = {
+    raw: [
+      "王名扬. 美国行政法[M]. 北京: 中国法制出版社, 1995: 18.",
+      "王保树. 股份有限公司机关构造中的董事和董事会[C]//梁慧星, 主编. 民商法论丛: 第1卷. 北京: 法律出版社, 1994: 110.",
+      "张新宝《侵权责任法》第5版 73-75页",
+      "中华人民共和国民法典 第一千二百二十四条第一款第（一）项",
+      "国务院关于在全国建立农村最低生活保障制度的通知 国发(2007)19号",
+      "包郑照诉苍南县人民政府强制拆除房屋案，浙江省高级人民法院，1988年判决",
+      "Charles A. Reich, The New Property, 73 Yale L.J. 733, 737–38 (1964).",
+      "Ridge v Baldwin [1964] AC 40",
+      "CHEVALLIER (J.), L'État de droit, Paris, Montchrestien, 4e éd., 2003, p. 16-29",
+      "Roxin, Claus: Strafrecht Allgemeiner Teil, Bd. I, 4. Aufl., München 2006, § 15 Rn. 19",
+      "Falzea A., L'offerta reale e la liberazione coattiva del debitore, Milano, Giuffrè, 1947, p. 34 s.",
+      "Автор А. А. Название статьи // Государство и право. 2023. № 3. С. 17–30.",
+      "我妻栄『新訂担保物権法（民法講義III）』（岩波書店，昭和46年）50頁",
+      "王保树，股份有限公司机关构造中的董事和董事会，民商法论丛"
+    ].join("\n"),
+    form: { type: "book", authors: "哈特穆特·毛雷尔", nationality: "德", title: "行政法学总论", publisher: "法律出版社", year: "2000", is_translation: true, specific: true }
+  };
+
+  // src/ui/app.ts
+  var $ = (id) => document.getElementById(id);
+  var input = (id) => $(id);
+  var esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+  var italics = (s, tag) => s.replace(/\*(.+?)\*/g, `<${tag}>$1</${tag}>`);
+  var prefs = {
+    get(key) {
+      try {
+        return localStorage.getItem(key);
+      } catch {
+        return null;
+      }
+    },
+    set(key, value) {
+      try {
+        localStorage.setItem(key, value);
+      } catch {
+      }
+    }
+  };
+  function attempt(fields, source) {
+    try {
+      return { ...cite(fields()), source };
+    } catch (error) {
+      return { error: error.message, source };
+    }
+  }
+  var results = {
+    items: [],
+    show(items) {
+      this.items = items;
+      this.render();
+    },
+    footnote(item) {
+      let html = italics(esc(item.text), "em");
+      for (const label of new Set(item.missing)) html = html.split(`[${esc(label)}]`).join(`<span class="gap">[${esc(label)}]</span>`);
+      return html;
+    },
+    row(item, i) {
+      const source = item.source ? `<div class="src">原文：${esc(item.source)}</div>` : "";
+      if (item.error) return `<div class="cite error"><div class="text">${esc(item.error)}</div>${source}<div class="meta"><span class="pill err">无法转换</span></div></div>`;
+      const missing = item.missing;
+      const pill = missing.length ? `<span class="pill gaps">缺 ${missing.length} 项：${esc(missing.join("、"))}</span>` : `<span class="pill ok">要素齐全</span>`;
+      return `<div class="cite"><div class="text">${this.footnote(item)}</div>${source}<div class="meta">${pill}<button class="btn small" data-copy="${i}">复制</button></div></div>`;
+    },
+    render() {
+      $("results").innerHTML = this.items.length ? this.items.map((it, i) => this.row(it, i)).join("") : `<div class="empty">在左边粘贴原文或逐项填写，结果会显示在这里。</div>`;
+      const count = (test) => this.items.filter(test).length;
+      $("tally").textContent = [
+        [count((it) => !it.error && !it.missing.length), "条齐全"],
+        [count((it) => !it.error && it.missing.length > 0), "条有缺项"],
+        [count((it) => Boolean(it.error)), "条无法转换"]
+      ].filter(([n]) => n).map(([n, s]) => `${n} ${s}`).join(" · ");
+    }
+  };
+  var toastTimer;
+  function toast(message) {
+    const el = $("toast");
+    el.textContent = message;
+    el.hidden = false;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      el.hidden = true;
+    }, 1600);
+  }
+  async function copy(texts) {
+    const plain2 = texts.map((t) => t.replace(/\*(.+?)\*/g, "$1")).join("\n");
+    const html = texts.map((t) => `<p>${italics(esc(t), "i")}</p>`).join("");
+    const done = () => toast(texts.length > 1 ? `已复制 ${texts.length} 条` : "已复制");
+    try {
+      await navigator.clipboard.write([new ClipboardItem({
+        "text/plain": new Blob([plain2], { type: "text/plain" }),
+        "text/html": new Blob([html], { type: "text/html" })
+      })]);
+      done();
+    } catch {
+      try {
+        await navigator.clipboard.writeText(plain2);
+        done();
+      } catch {
+        toast("浏览器不允许复制，请手动选中文字复制");
+      }
+    }
+  }
+  function convertRaw() {
+    const raw = $("raw").value;
+    prefs.set("yinzhu-raw", raw);
+    const lines = raw.split("\n").map((s) => s.trim()).filter(Boolean);
+    results.show(lines.map((line) => attempt(() => parse(line), line)));
+  }
+  var form = {
+    id: (type, key) => `f-${type}-${key}`,
+    field(type, [key, label, kind = "text", required, wide], values) {
+      const id = this.id(type, key), v = values[key];
+      if (kind === "check") return `<div class="field wide"><label class="check"><input type="checkbox" id="${id}"${v ? " checked" : ""}> ${esc(label)}</label></div>`;
+      const cls = `field${wide || kind === "date" ? " wide" : ""}${required ? " req" : ""}`;
+      if (kind === "date") {
+        const d = v ?? {};
+        const parts = [["year", "年"], ["month", "月"], ["day", "日"]].map(([k, unit]) => `<input type="number" id="${id}-${k}" placeholder="${unit}" aria-label="${esc(label)}${unit}" value="${esc(d[k] ?? "")}">`).join("");
+        return `<div class="${cls}"><label for="${id}-year">${esc(label)}</label><div class="row" style="flex-wrap:nowrap">${parts}</div></div>`;
+      }
+      return `<div class="${cls}"><label for="${id}">${esc(label)}</label><input type="text" id="${id}" value="${esc(String(v ?? ""))}"></div>`;
+    },
+    build(type, values = {}) {
+      $("type").value = type;
+      $("fields").innerHTML = TYPES[type][1].map((spec) => this.field(type, spec, values)).join("");
+    },
+    read() {
+      const type = $("type").value, fields = { type };
+      const readers = {
+        check: (id) => input(id).checked || void 0,
+        date(id) {
+          const [year2, month, day] = ["year", "month", "day"].map((k) => input(`${id}-${k}`).value || null);
+          return year2 || month || day ? { year: year2, month, day } : void 0;
+        },
+        list: (id) => input(id).value.split(/[、,，]/).map((s) => s.trim()).filter(Boolean),
+        enlist: (id) => input(id).value.split(/\s*;\s*/).filter(Boolean),
+        text: (id) => input(id).value.trim()
+      };
+      for (const [key, , kind = "text"] of TYPES[type][1]) {
+        const value = readers[kind](this.id(type, key));
+        if (!blank(value)) fields[key] = value;
+      }
+      if (fields.is_translation && !("translators" in fields)) fields.translators = null;
+      if (input("unverified").checked) fields.unverified = true;
+      return fields;
+    }
+  };
+  function showTab(name) {
+    const raw = name === "raw";
+    $("tab-raw").setAttribute("aria-selected", String(raw));
+    $("tab-form").setAttribute("aria-selected", String(!raw));
+    $("pane-raw").hidden = !raw;
+    $("pane-form").hidden = raw;
+    prefs.set("yinzhu-tab", name);
+  }
+  var rawBox = $("raw");
+  $("type").innerHTML = GROUPS.map(([group, keys]) => `<optgroup label="${group}">${keys.map((k) => `<option value="${k}">${TYPES[k][0]}</option>`).join("")}</optgroup>`).join("");
+  $("type").addEventListener("change", (e) => form.build(e.target.value));
+  $("tab-raw").addEventListener("click", () => showTab("raw"));
+  $("tab-form").addEventListener("click", () => showTab("form"));
+  $("go-raw").addEventListener("click", convertRaw);
+  $("sample-raw").addEventListener("click", () => {
+    rawBox.value = SAMPLE.raw;
+    convertRaw();
+  });
+  $("clear-raw").addEventListener("click", () => {
+    rawBox.value = "";
+    prefs.set("yinzhu-raw", "");
+    results.show([]);
+  });
+  $("go-form").addEventListener("click", () => results.show([attempt(() => form.read(), "")]));
+  $("clear-form").addEventListener("click", () => {
+    form.build($("type").value);
+    input("unverified").checked = false;
+  });
+  $("results").addEventListener("click", (e) => {
+    const i = e.target.dataset.copy;
+    if (i !== void 0) copy([results.items[Number(i)].text]);
+  });
+  $("copy-all").addEventListener("click", () => {
+    const texts = results.items.filter((it) => !it.error).map((it) => it.text);
+    if (texts.length) copy(texts);
+  });
+  form.build(SAMPLE.form.type, SAMPLE.form);
+  rawBox.value = prefs.get("yinzhu-raw")?.trim() ? prefs.get("yinzhu-raw") : SAMPLE.raw;
+  showTab(prefs.get("yinzhu-tab") === "form" ? "form" : "raw");
+  convertRaw();
+})();
+</script>
+</body>
+</html>
