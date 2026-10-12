@@ -5,8 +5,8 @@ import { sentence, type Styles } from "./style.ts";
 
 const LEVELS = [["article", "条"], ["paragraph", "款"], ["item", "项"], ["subitem", "目"]] as const;
 
-/** 条款项目用阿拉伯数字，去掉括号；“之一”保留（第70条）. */
-const provisions = (e: Entry): string => LEVELS.map(([key, unit]) => {
+/** 条款项目用阿拉伯数字，去掉括号；“之一”保留（第70条）. A locator read from an article is used as written. */
+const provisions = (e: Entry): string => e.get("locator") ?? LEVELS.map(([key, unit]) => {
   const value = e.get(key);
   return value == null ? "" : `第${normalize.toInt(value)}${unit}` + (key === "article" ? e.get("article_suffix") ?? "" : "");
 }).join("");
@@ -26,9 +26,11 @@ export const styles: Styles = {
     const issuer = e.get("issuer") ?? "";
     const title = `${name.includes(issuer) ? "" : issuer}《${name}》`;
     const number = normalize.docNumber(e.get("doc_no"));
-    const inline = e.flag("inline");
-    const mark = number ? (inline ? `（${number}）` : number)
-      : e.dateParts("date") ? `${e.date("date")}发布` : e.require(null, "文号");
+    const inline = e.flag("inline") || e.flag("repealed");
+    const mark = number && e.flag("repealed") ? `（${number}，已废止）`
+      : e.flag("repealed") ? `（${e.dateParts("date") ? `${e.date("date")}${e.get("date_event") ?? "发布"}` : e.require(null, "文号")}，已废止）`
+      : number ? (inline ? `（${number}）` : number)
+      : e.dateParts("date") ? `${e.date("date")}${e.get("date_event") ?? "发布"}` : e.require(null, "文号");
     const part = e.get("section");
     const where = part ? `第${part}节` + (e.get("subsection") ? `第${e.get("subsection")}小节` : "") : provisions(e);
     return inline ? sentence(title + mark, where) : sentence(title, mark, where);

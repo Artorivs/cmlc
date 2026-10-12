@@ -12,16 +12,18 @@ import { UnverifiedSourceError } from "./errors.ts";
 import { STYLES } from "./styles/index.ts";
 
 export { blank, type Fields } from "./entry.ts";
+export { TYPE_NAMES, typeName } from "./kinds.ts";
 export { ParseError, UnverifiedSourceError } from "./errors.ts";
 export { parse, PARSERS } from "./parse/index.ts";
 export { STYLES } from "./styles/index.ts";
 
-export interface Citation { text: string; missing: string[] }
+/** `type` is the source type the text was written as (book, statute …); typeName() gives its Chinese name. */
+export interface Citation { text: string; missing: string[]; type: string }
 
 export function cite(fields: Fields): Citation {
   if (fields.unverified) throw new UnverifiedSourceError("未经核实的文献不得引用（第2条）。请先找到原文，核对作者、篇名和出处后再转换。");
   const render = STYLES[String(fields.type)];
   if (!render) throw new Error(`未知的文献类型：${fields.type}。可用类型：${Object.keys(STYLES).join(", ")}`);
   const entry = new Entry(fields);
-  return { text: render(entry), missing: entry.missing };
+  return { text: render(entry), missing: entry.missing, type: String(fields.type) };
 }

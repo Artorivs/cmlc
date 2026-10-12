@@ -2,7 +2,9 @@
 import type { Fields } from "../entry.ts";
 import { cut, groups, type Parser } from "./util.ts";
 
-const JAPANESE = /[぀-ヿ『』「」]|頁|巻/;
+/** Kana, 巻, or a 『書名』 that is not a quotation inside 「」 — 「」 and 頁 alone are also traditional Chinese. */
+export const looksJapanese = (text: string): boolean =>
+  /[぀-ヿ]|巻/.test(text) || (/『/.test(text.replace(/「[^」]*」/g, "")) && !/[《〈]/.test(text));
 const BOOK = /^(?<authors>[^『「]*?)\s*『(?<title>[^』]+)』(?<rest>.*)$/;
 const ARTICLE = /^(?<authors>[^『「]*?)\s*「(?<title>[^」]+)」(?<rest>(?!.*編\s*『).*)$/;  // not 編『書名』
 const JOURNAL = /^[\s、，,]*『?(?<journal>[^\d『』（(、，,]+)』?\s*[、，,]?\s*(?:第?(?<volume>\d+)\s*巻)?\s*(?:第?(?<issue>\d+)\s*号)?/;
@@ -21,7 +23,7 @@ function common(m: RegExpMatchArray, rest: string): [Fields, string] {
 
 /** 我妻栄『新訂担保物権法』（岩波書店，1971年）50頁 / 著者「論文名」ジュリスト1234号（2002年）56頁 */
 const japanese: Parser = text => {
-  if (!JAPANESE.test(text)) return null;
+  if (!looksJapanese(text)) return null;
   text = text.replace(/[。.\s]+$/, "");
   const book = text.match(BOOK);
   if (book) {

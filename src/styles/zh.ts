@@ -29,7 +29,7 @@ const publication = (e: Entry): string => `${e.need("publisher", "出版社")}${
 /** Pages, else chapter; pages are required when specific content is cited (第48条). */
 function locator(e: Entry): string | null {
   const found = normalize.pages(e.get("pages"));
-  if (found) return `第${found}页`;
+  if (found) return found.endsWith("以下") ? `第${found.slice(0, -2)}页以下` : `第${found}页`;
   if (e.get("chapter")) return e.get("chapter");
   return e.flag("specific") ? `第${e.require(null, "页码")}页` : null;
 }

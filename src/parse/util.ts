@@ -32,3 +32,40 @@ export const cut = (text: string, m: RegExpMatchArray | null): string =>
   m ? text.slice(0, m.index) + text.slice(m.index! + m[0].length) : text;
 
 export const names = (text: string): string[] => text.split(/[,，、]/).map(s => s.trim()).filter(Boolean);
+
+// ── brackets ───────────────────────────────────────────────────────────────
+
+const PAIRS: Record<string, string> = { "《": "》", "〈": "〉", "（": "）", "(": ")", "〔": "〕", "「": "」", "『": "』", "“": "”", "[": "]", "【": "】", "［": "］" };
+const CLOSERS = new Set(Object.values(PAIRS));
+
+/** Index just past the bracket that opens at `at`, or -1 when it never closes. */
+export function closing(text: string, at: number): number {
+  const stack: string[] = [];
+  for (let i = at; i < text.length; i++) {
+    const ch = text[i]!;
+    if (stack.length && ch === stack.at(-1)) { stack.pop(); if (!stack.length) return i + 1; }
+    else if (PAIRS[ch]) stack.push(PAIRS[ch]);
+    else if (CLOSERS.has(ch) && !stack.length) return -1;
+  }
+  return -1;
+}
+
+/** Split at any of `separators` outside brackets and quotes; each part keeps the separator that ended it. */
+export function splitTop(text: string, separators: string): { part: string; sep: string }[] {
+  const out: { part: string; sep: string }[] = [];
+  let depth: string[] = [], start = 0;
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i]!;
+    if (depth.length && ch === depth.at(-1)) depth.pop();
+    else if (PAIRS[ch] && !(ch === "“" && depth.at(-1) === "”")) depth.push(PAIRS[ch]);
+    else if (!depth.length && separators.includes(ch)) { out.push({ part: text.slice(start, i), sep: ch }); start = i + 1; }
+  }
+  if (start < text.length || !out.length) out.push({ part: text.slice(start), sep: "" });
+  return out;
+}
+
+/** Index of the first `ch` outside brackets, or -1. */
+export function topIndex(text: string, ch: string, from = 0): number {
+  const parts = splitTop(text.slice(from), ch);
+  return parts.length > 1 ? from + parts[0]!.part.length : -1;
+}

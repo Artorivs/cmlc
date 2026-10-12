@@ -42,7 +42,7 @@ export function docNumber(value: Scalar): string | null {
 /** Drop 书名号 and a leading '中华人民共和国' (第67条). */
 export function statuteName(name: string): string {
   name = name.trim().replace(/^《|》$/g, "");
-  return name.replace(/^中华人民共和国/, "") || name;
+  return name.replace(/^(?:中华人民共和国|中華人民共和國)/, "") || name;
 }
 
 /** 报纸版面序号前不加 0（第45条）. */

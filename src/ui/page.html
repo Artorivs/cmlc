@@ -87,6 +87,13 @@ textarea { min-height: 220px; resize: vertical; font-family: var(--font-mono); f
 .pill.gaps { background: var(--gap-bg); color: var(--gap-ink); }
 .pill.err { background: var(--error-soft); color: var(--error); }
 .cite.error .text { font-family: var(--font-ui); font-size: 14px; color: var(--error); }
+.cite.note::before { content: attr(data-label); counter-increment: none; }
+.pill.kind { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.pill.muted { background: var(--bg); color: var(--muted); border: 1px solid var(--line); }
+.warn { grid-column: 2; font-size: 12.5px; color: var(--gap-ink); }
+details.src summary { cursor: pointer; font-family: var(--font-ui); }
+.file { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.file input { font: 13px var(--font-ui); color: var(--muted); max-width: 100%; }
 .src { font-family: var(--font-mono); font-size: 12px; color: var(--muted); grid-column: 2; overflow-wrap: anywhere; }
 .summary { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
 .empty { color: var(--muted); font-size: 14px; padding: 18px 0; }
@@ -114,6 +121,7 @@ code { font-family: var(--font-mono); font-size: 12px; background: var(--bg); pa
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" id="tab-raw" aria-selected="true" aria-controls="pane-raw">粘贴原文</button>
         <button class="tab" role="tab" id="tab-form" aria-selected="false" aria-controls="pane-form">逐项填写</button>
+        <button class="tab" role="tab" id="tab-article" aria-selected="false" aria-controls="pane-article">整篇文章</button>
       </div>
 
       <div id="pane-raw" role="tabpanel" aria-labelledby="tab-raw" style="display:flex;flex-direction:column;gap:12px">
@@ -139,6 +147,20 @@ code { font-family: var(--font-mono); font-size: 12px; background: var(--bg); pa
           <button class="btn" id="clear-form">清空本类型</button>
         </div>
       </div>
+      <div id="pane-article" role="tabpanel" aria-labelledby="tab-article" hidden style="display:flex;flex-direction:column;gap:12px">
+        <div class="file">
+          <input type="file" id="article-file" accept=".md,.markdown,.txt,.docx,.doc,.wps,.pages,.odt,.rtf" aria-label="上传文章">
+        </div>
+        <textarea id="article" spellcheck="false" aria-label="文章全文，Markdown 格式"></textarea>
+        <p class="hint">上传 Word（.docx）、Markdown 或纯文本文件，也可以把全文贴进方框。能读取：Markdown 的 <code>[^1]:</code> 脚注、Word 的脚注，或每行一条的注释。上传 Word 文件会得到一份修订后的 Word 文件：正文和版式不变，只改脚注，改动默认以“修订”标出，可在 Word 中逐条接受或拒绝。.doc、.pages 等格式请先另存为 .docx。每条脚注里的文献按手册改写；同一条脚注中作者的说明、引文和〔待核〕之类的自注原样保留；“同上”“上注5”“《某法》（上注5）第3条”会写成完整引注（手册第13条不建议定稿前使用略写）；繁体文章仍输出繁体。识别不了的部分保留原文，并标出来请你人工处理。</p>
+        <div class="row">
+          <button class="btn primary" id="go-article">处理脚注</button>
+          <button class="btn" id="sample-article">载入示例</button>
+          <button class="btn" id="download-article" hidden>下载修订稿</button>
+          <button class="btn" id="clear-article">清空</button>
+        </div>
+        <label class="check" id="track-option" hidden><input type="checkbox" id="track" checked> 以修订模式标出改动（在 Word 中可逐条接受或拒绝；不勾选则直接替换）</label>
+      </div>
     </section>
 
     <section class="panel" aria-label="结果">
@@ -160,13 +182,16 @@ code { font-family: var(--font-mono); font-size: 12px; background: var(--bg); pa
           <li>裁判文书：案名，法院（年份）案号+文书类型。（第87–89条）</li>
           <li>英文：被引文献名用斜体，刊名写全称，页码只用 p.（第97–107条）</li>
           <li>外文作者名在前、姓在后，不写出版地；法、德、意、俄、日文各按本语种习惯。（第95–150条）</li>
+          <li>再次引用：定稿前不建议略写，整篇文章中的交叉引用写成完整引注；前后紧邻、文献完全相同的可写“同上注”。（第13条）</li>
           <li>未经核实的文献不得引用。（第2条）</li>
+          <li>每条结果都标出识别到的文献类型（如“法律法规”“期刊论文”），类型不对说明原文被读错了，请改用“逐项填写”。</li>
         </ul>
       </details>
     </section>
   </div>
 </div>
 <div class="toast" id="toast" hidden></div>
+
 
 <script>
 /* cmlc:app */
