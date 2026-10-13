@@ -5,5 +5,6 @@ export type Style = (e: Entry) => string;
 export type Styles = Record<string, Style>;
 
 /** Chinese footnote: parts joined by full-width commas, closed by a full stop. */
-export const sentence = (...parts: (string | null | false | undefined)[]): string =>
-  parts.filter(Boolean).join("，") + "。";
+export const sentence = (
+    ...parts: (string | null | false | undefined)[]
+): string => parts.filter(Boolean).join("，") + "。";

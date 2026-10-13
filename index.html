@@ -1,103 +1,227 @@
 <!doctype html>
 <html lang="zh-CN">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="description" content="按《法学引注手册》（第二版）把参考文献整理成脚注格式，缺项标为 [字段名]。">
-<title>法学引注助手</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400&display=swap">
-<link rel="stylesheet" href="src/ui/style.css">
-</head>
-<body>
+    <head>
+        <meta charset="utf-8" />
+        <meta
+            name="viewport"
+            content="width=device-width, initial-scale=1, viewport-fit=cover" />
+        <meta
+            name="description"
+            content="按《法学引注手册》（第二版）把参考文献整理成脚注格式，缺项标为 [字段名]。" />
+        <title>法学引注助手</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            rel="stylesheet"
+            href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=IBM+Plex+Mono:wght@400&display=swap" />
+        <link rel="stylesheet" href="src/ui/style.css" />
+    </head>
+    <body>
+        <div class="wrap">
+            <header>
+                <div>
+                    <h1>法学引注助手</h1>
+                    <p class="sub">
+                        依据《法学引注手册》（第二版）把参考文献整理成脚注格式。手册要求但原文缺少的信息，标为
+                        <b>[字段名]</b>，不会自动补写。
+                    </p>
+                </div>
+            </header>
 
-<div class="wrap">
-  <header>
-    <div>
-      <h1>法学引注助手</h1>
-      <p class="sub">依据《法学引注手册》（第二版）把参考文献整理成脚注格式。手册要求但原文缺少的信息，标为 <b>[字段名]</b>，不会自动补写。</p>
-    </div>
-  </header>
+            <div class="desk">
+                <section class="panel" aria-label="输入">
+                    <div class="tabs" role="tablist">
+                        <button
+                            class="tab"
+                            role="tab"
+                            id="tab-raw"
+                            aria-selected="true"
+                            aria-controls="pane-raw">
+                            粘贴原文
+                        </button>
+                        <button
+                            class="tab"
+                            role="tab"
+                            id="tab-form"
+                            aria-selected="false"
+                            aria-controls="pane-form">
+                            逐项填写
+                        </button>
+                        <button
+                            class="tab"
+                            role="tab"
+                            id="tab-article"
+                            aria-selected="false"
+                            aria-controls="pane-article">
+                            整篇文章
+                        </button>
+                    </div>
 
-  <div class="desk">
-    <section class="panel" aria-label="输入">
-      <div class="tabs" role="tablist">
-        <button class="tab" role="tab" id="tab-raw" aria-selected="true" aria-controls="pane-raw">粘贴原文</button>
-        <button class="tab" role="tab" id="tab-form" aria-selected="false" aria-controls="pane-form">逐项填写</button>
-        <button class="tab" role="tab" id="tab-article" aria-selected="false" aria-controls="pane-article">整篇文章</button>
-      </div>
+                    <div
+                        id="pane-raw"
+                        role="tabpanel"
+                        aria-labelledby="tab-raw"
+                        style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                        ">
+                        <textarea
+                            id="raw"
+                            spellcheck="false"
+                            aria-label="原始参考文献，每行一条"></textarea>
+                        <p class="hint">
+                            每行一条。能识别：国标 GB/T 7714（[M] [J] [N] [D]
+                            [C]
+                            [EB/OL]）；“作者《书名》……”式的中文笔记；法条、带文号的文件；裁判文书、公报案例、指导性案例；英文的
+                            Bluebook、OSCOLA
+                            写法和英美案例；法文、德文、意大利文、俄文、日文的图书和期刊论文。识别不了的请用“逐项填写”。
+                        </p>
+                        <div class="row">
+                            <button class="btn primary" id="go-raw">
+                                转换
+                            </button>
+                            <button class="btn" id="sample-raw">
+                                载入示例
+                            </button>
+                            <button class="btn" id="clear-raw">清空</button>
+                        </div>
+                    </div>
 
-      <div id="pane-raw" role="tabpanel" aria-labelledby="tab-raw" style="display:flex;flex-direction:column;gap:12px">
-        <textarea id="raw" spellcheck="false" aria-label="原始参考文献，每行一条"></textarea>
-        <p class="hint">每行一条。能识别：国标 GB/T 7714（[M] [J] [N] [D] [C] [EB/OL]）；“作者《书名》……”式的中文笔记；法条、带文号的文件；裁判文书、公报案例、指导性案例；英文的 Bluebook、OSCOLA 写法和英美案例；法文、德文、意大利文、俄文、日文的图书和期刊论文。识别不了的请用“逐项填写”。</p>
-        <div class="row">
-          <button class="btn primary" id="go-raw">转换</button>
-          <button class="btn" id="sample-raw">载入示例</button>
-          <button class="btn" id="clear-raw">清空</button>
+                    <div
+                        id="pane-form"
+                        role="tabpanel"
+                        aria-labelledby="tab-form"
+                        hidden
+                        style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 14px;
+                        ">
+                        <div class="field">
+                            <label for="type">文献类型</label>
+                            <select id="type"></select>
+                        </div>
+                        <div class="grid" id="fields"></div>
+                        <label class="check"
+                            ><input type="checkbox" id="unverified" />
+                            来源尚未核实（如 AI 工具给出的文献）</label
+                        >
+                        <p class="hint">
+                            带 * 的是手册要求的信息，留空会标为
+                            [字段名]。中文、日文作者用顿号分隔；西文、俄文作者用分号分隔，每位写“名
+                            姓”。
+                        </p>
+                        <div class="row">
+                            <button class="btn primary" id="go-form">
+                                生成引注
+                            </button>
+                            <button class="btn" id="clear-form">
+                                清空本类型
+                            </button>
+                        </div>
+                    </div>
+                    <div
+                        id="pane-article"
+                        role="tabpanel"
+                        aria-labelledby="tab-article"
+                        hidden
+                        style="
+                            display: flex;
+                            flex-direction: column;
+                            gap: 12px;
+                        ">
+                        <div class="file">
+                            <input
+                                type="file"
+                                id="article-file"
+                                accept=".md,.markdown,.txt,.docx,.doc,.wps,.pages,.odt,.rtf"
+                                aria-label="上传文章" />
+                        </div>
+                        <textarea
+                            id="article"
+                            spellcheck="false"
+                            aria-label="文章全文，Markdown 格式"></textarea>
+                        <p class="hint">
+                            上传 Word（.docx）、Markdown
+                            或纯文本文件，也可以把全文贴进方框。能读取：Markdown
+                            的
+                            <code>[^1]:</code> 脚注、Word
+                            的脚注，或每行一条的注释。上传 Word
+                            文件会得到一份修订后的 Word
+                            文件：正文和版式不变，只改脚注，改动默认以“修订”标出，可在
+                            Word 中逐条接受或拒绝。.doc、.pages 等格式请先另存为
+                            .docx。每条脚注里的文献按手册改写；同一条脚注中作者的说明、引文和〔待核〕之类的自注原样保留；“同上”“上注5”“《某法》（上注5）第3条”会写成完整引注（手册第13条不建议定稿前使用略写）；繁体文章仍输出繁体。识别不了的部分保留原文，并标出来请你人工处理。
+                        </p>
+                        <div class="row">
+                            <button class="btn primary" id="go-article">
+                                处理脚注
+                            </button>
+                            <button class="btn" id="sample-article">
+                                载入示例
+                            </button>
+                            <button class="btn" id="download-article" hidden>
+                                下载修订稿
+                            </button>
+                            <button class="btn" id="clear-article">清空</button>
+                        </div>
+                        <label class="check" id="track-option" hidden
+                            ><input type="checkbox" id="track" checked />
+                            以修订模式标出改动（在 Word
+                            中可逐条接受或拒绝；不勾选则直接替换）</label
+                        >
+                    </div>
+                </section>
+
+                <section class="panel" aria-label="结果">
+                    <div class="summary">
+                        <h2>引注结果</h2>
+                        <div class="row">
+                            <span id="tally" class="legend"></span>
+                            <button class="btn small" id="copy-all">
+                                全部复制
+                            </button>
+                        </div>
+                    </div>
+                    <div class="results" id="results"></div>
+                    <details class="help">
+                        <summary>格式依据</summary>
+                        <ul>
+                            <li>
+                                图书：作者：《书名》（版次），译者译，出版社××××年版，第×页。（第25–48条）
+                            </li>
+                            <li>
+                                析出文献前一律加“载”；期刊写“××××年第×期”。（第8、43条）
+                            </li>
+                            <li>
+                                法条用阿拉伯数字，省略“中华人民共和国”。（第67、70条）
+                            </li>
+                            <li>文号年份用六角括号〔〕。（第74条）</li>
+                            <li>
+                                裁判文书：案名，法院（年份）案号+文书类型。（第87–89条）
+                            </li>
+                            <li>
+                                英文：被引文献名用斜体，刊名写全称，页码只用
+                                p.（第97–107条）
+                            </li>
+                            <li>
+                                外文作者名在前、姓在后，不写出版地；法、德、意、俄、日文各按本语种习惯。（第95–150条）
+                            </li>
+                            <li>
+                                再次引用：定稿前不建议略写，整篇文章中的交叉引用写成完整引注；前后紧邻、文献完全相同的可写“同上注”。（第13条）
+                            </li>
+                            <li>未经核实的文献不得引用。（第2条）</li>
+                            <li>
+                                每条结果都标出识别到的文献类型（如“法律法规”“期刊论文”），类型不对说明原文被读错了，请改用“逐项填写”。
+                            </li>
+                        </ul>
+                    </details>
+                </section>
+            </div>
         </div>
-      </div>
+        <div class="toast" id="toast" hidden></div>
 
-      <div id="pane-form" role="tabpanel" aria-labelledby="tab-form" hidden style="display:flex;flex-direction:column;gap:14px">
-        <div class="field">
-          <label for="type">文献类型</label>
-          <select id="type"></select>
-        </div>
-        <div class="grid" id="fields"></div>
-        <label class="check"><input type="checkbox" id="unverified"> 来源尚未核实（如 AI 工具给出的文献）</label>
-        <p class="hint">带 * 的是手册要求的信息，留空会标为 [字段名]。中文、日文作者用顿号分隔；西文、俄文作者用分号分隔，每位写“名 姓”。</p>
-        <div class="row">
-          <button class="btn primary" id="go-form">生成引注</button>
-          <button class="btn" id="clear-form">清空本类型</button>
-        </div>
-      </div>
-      <div id="pane-article" role="tabpanel" aria-labelledby="tab-article" hidden style="display:flex;flex-direction:column;gap:12px">
-        <div class="file">
-          <input type="file" id="article-file" accept=".md,.markdown,.txt,.docx,.doc,.wps,.pages,.odt,.rtf" aria-label="上传文章">
-        </div>
-        <textarea id="article" spellcheck="false" aria-label="文章全文，Markdown 格式"></textarea>
-        <p class="hint">上传 Word（.docx）、Markdown 或纯文本文件，也可以把全文贴进方框。能读取：Markdown 的 <code>[^1]:</code> 脚注、Word 的脚注，或每行一条的注释。上传 Word 文件会得到一份修订后的 Word 文件：正文和版式不变，只改脚注，改动默认以“修订”标出，可在 Word 中逐条接受或拒绝。.doc、.pages 等格式请先另存为 .docx。每条脚注里的文献按手册改写；同一条脚注中作者的说明、引文和〔待核〕之类的自注原样保留；“同上”“上注5”“《某法》（上注5）第3条”会写成完整引注（手册第13条不建议定稿前使用略写）；繁体文章仍输出繁体。识别不了的部分保留原文，并标出来请你人工处理。</p>
-        <div class="row">
-          <button class="btn primary" id="go-article">处理脚注</button>
-          <button class="btn" id="sample-article">载入示例</button>
-          <button class="btn" id="download-article" hidden>下载修订稿</button>
-          <button class="btn" id="clear-article">清空</button>
-        </div>
-        <label class="check" id="track-option" hidden><input type="checkbox" id="track" checked> 以修订模式标出改动（在 Word 中可逐条接受或拒绝；不勾选则直接替换）</label>
-      </div>
-    </section>
-
-    <section class="panel" aria-label="结果">
-      <div class="summary">
-        <h2>引注结果</h2>
-        <div class="row">
-          <span id="tally" class="legend"></span>
-          <button class="btn small" id="copy-all">全部复制</button>
-        </div>
-      </div>
-      <div class="results" id="results"></div>
-      <details class="help">
-        <summary>格式依据</summary>
-        <ul>
-          <li>图书：作者：《书名》（版次），译者译，出版社××××年版，第×页。（第25–48条）</li>
-          <li>析出文献前一律加“载”；期刊写“××××年第×期”。（第8、43条）</li>
-          <li>法条用阿拉伯数字，省略“中华人民共和国”。（第67、70条）</li>
-          <li>文号年份用六角括号〔〕。（第74条）</li>
-          <li>裁判文书：案名，法院（年份）案号+文书类型。（第87–89条）</li>
-          <li>英文：被引文献名用斜体，刊名写全称，页码只用 p.（第97–107条）</li>
-          <li>外文作者名在前、姓在后，不写出版地；法、德、意、俄、日文各按本语种习惯。（第95–150条）</li>
-          <li>再次引用：定稿前不建议略写，整篇文章中的交叉引用写成完整引注；前后紧邻、文献完全相同的可写“同上注”。（第13条）</li>
-          <li>未经核实的文献不得引用。（第2条）</li>
-          <li>每条结果都标出识别到的文献类型（如“法律法规”“期刊论文”），类型不对说明原文被读错了，请改用“逐项填写”。</li>
-        </ul>
-      </details>
-    </section>
-  </div>
-</div>
-<div class="toast" id="toast" hidden></div>
-
-
-<!-- Built from src/ by build.ts (npm run build). -->
-<script src="dist/app.js" defer></script>
-</body>
+        <!-- Built from src/ by build.ts (npm run build). -->
+        <script src="dist/app.js" defer></script>
+    </body>
 </html>

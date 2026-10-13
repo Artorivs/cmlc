@@ -10,4 +10,13 @@ import type { Styles } from "./style.ts";
 import { styles as zh } from "./zh.ts";
 
 export type { Style, Styles } from "./style.ts";
-export const STYLES: Styles = { ...zh, ...law, ...en, ...fr, ...de, ...it, ...ru, ...ja };
+export const STYLES: Styles = {
+    ...zh,
+    ...law,
+    ...en,
+    ...fr,
+    ...de,
+    ...it,
+    ...ru,
+    ...ja,
+};

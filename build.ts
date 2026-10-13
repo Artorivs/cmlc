@@ -5,12 +5,14 @@
 import { build } from "esbuild";
 
 await build({
-  entryPoints: ["src/ui/app.ts"],
-  outfile: "dist/app.js",
-  bundle: true,
-  format: "iife",
-  target: "es2022",
-  charset: "utf8",
-  banner: { js: "// Built from src/ by build.ts. Edit the TypeScript, then run: npm run build" },
+    entryPoints: ["src/ui/app.ts"],
+    outfile: "dist/app.js",
+    bundle: true,
+    format: "iife",
+    target: "es2022",
+    charset: "utf8",
+    banner: {
+        js: "// Built from src/ by build.ts. Edit the TypeScript, then run: npm run build",
+    },
 });
 console.log("dist/app.js built");
